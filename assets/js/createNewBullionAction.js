@@ -14,7 +14,7 @@ document.getElementById('createNewBullionBtn').addEventListener('click', functio
     }
 
     // send POST request to the url https://nowszawersja.pages.dev/images using fetch API. Add the file data to the body of the request.
-    fetch('http://localhost:8788/images', {
+    fetch(url, {
         method: 'POST',
         body: file,
         headers:{'x-filename':id}
