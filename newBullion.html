@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html data-bs-theme="light" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>goldDashboard</title>
+    <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-md bg-body mb-5">
+        <div class="container-fluid"><button data-bs-toggle="collapse" class="navbar-toggler" data-bs-target="#navcol-1"><span class="visually-hidden">Toggle navigation</span><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="navcol-1"><a class="navbar-brand" href="#">Gold Vault</a>
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Your Gold</a></li>
+                    <li class="nav-item"><a class="nav-link" href="buy.html">Listed Gold</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="create.html">Mint Gold</a></li>
+                </ul>
+            </div><button class="btn btn-primary" type="button">Connect</button>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="row d-lg-flex justify-content-md-center">
+            <div class="col-md-6 d-flex flex-column">
+                <form class="bg-white border rounded shadow p-3"><label class="form-label">Ownership Document</label><input class="form-control" type="file" id="documentToUpload"><label class="form-label">Bullion Details</label><textarea class="form-control"></textarea><label class="form-label">Bullion NFT ID (must be unique)</label><input class="form-control" type="number" id="documentId">
+                    <hr><button class="btn btn-primary" id="createNewBullionBtn" type="button">Save to Blockchain</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="assets/bootstrap/js/bootstrap.min.js"></script>
+    <script src="assets/js/createNewBullionAction.js"></script>
+    <script src="assets/js/params.js"></script>
+</body>
+
+</html>
