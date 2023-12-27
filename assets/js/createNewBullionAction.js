@@ -4,13 +4,14 @@ document.getElementById('createNewBullionBtn').addEventListener('click', functio
     // get the file id from the form element id documentId.
     var id = document.getElementById('documentId').value;
   
-    // check if the current site is running on localhost or on the cloud
-    if (window.location.href.indexOf('localhost') > -1) {
-      // if we are running on localhost, set the url to http://localhost:8788/images
-      url = 'http://localhost:8788/images';
-    } else {
-      // if we are running on the cloud, set the url to https://nowszawersja.pages.dev/images
-      url = 'https://nowszawersja.pages.dev/images';
+    switch (window.location.hostname) {
+      case 'localhost':
+      case '127.0.0.1':
+        url = 'http://localhost:8788/images';
+        break;
+      default:
+        url = 'https://nowszawersja.pages.dev/images';
+        break;
     }
 
     // send POST request to the url https://nowszawersja.pages.dev/images using fetch API. Add the file data to the body of the request.
