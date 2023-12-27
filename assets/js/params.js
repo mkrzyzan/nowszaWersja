@@ -1,14 +1,11 @@
 params = new URLSearchParams(window.location.search);
 
-switch (window.location.pathname) {
-    case '/bullionDetails.html':
-        document.getElementById('bullionIdNumber').innerText = params.get('id')
-        break;
-    case '/goldOwnerProfile.html':
-        document.getElementById('goldOwnerName').innerText = params.get('goldOwner')
-        break;
-    default:
-        break;
+if (window.location.pathname.includes('bullionDetails')) {
+    document.getElementById('bullionIdNumber').innerText = params.get('id')
+} else if (window.location.pathname.includes('goldOwnerProfile')) {
+    document.getElementById('goldOwnerName').innerText = params.get('goldOwner')
+} else {
+    // do nothing
 }
 
 function getUsername(address) {
