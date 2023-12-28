@@ -8,6 +8,7 @@ async function connectButtonFn() {
     try {
         console.log('connectButtonFn');
         if (localStorage.getItem('walletConnected') == 'true') {
+            alert('wallet connected');
 
             const storedAddress = localStorage.getItem('address');
             if (storedAddress) {
@@ -41,5 +42,6 @@ async function connectButtonFn() {
         console.log(error);
         localStorage.setItem('walletConnected', false);
         document.getElementById('blockchainConnectBtn').innerHTML = 'Connect';
+        alert('Exception!');
     }
 }
