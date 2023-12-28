@@ -2,7 +2,11 @@ document.getElementById('blockchainConnectBtn').addEventListener('click', () => 
     localStorage.setItem('walletConnected', true)
     connectButtonFn();
 });
-connectButtonFn();
+// call the connectButtonFn function when the DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    connectButtonFn();
+});
+
 
 async function connectButtonFn() {
     try {
