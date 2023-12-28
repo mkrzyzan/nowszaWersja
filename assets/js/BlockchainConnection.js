@@ -29,7 +29,7 @@ async function connectButtonFn() {
             window.signer = signer;
 
             // throw error here
-            // throw new Error('No address found');
+            throw new Error('No address found');
           
             // add the address to the clicked button
             document.getElementById('blockchainConnectBtn').innerHTML = shortAddress;
@@ -40,8 +40,8 @@ async function connectButtonFn() {
         }
     } catch (error) {
         console.log(error);
+        alert("Error: " + error);
         localStorage.setItem('walletConnected', false);
         document.getElementById('blockchainConnectBtn').innerHTML = 'Connect';
-        alert('Exception!');
     }
 }
