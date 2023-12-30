@@ -28,8 +28,8 @@
     <div class="container">
         <div class="row d-lg-flex justify-content-md-center">
             <div class="col-md-6 d-flex flex-column">
-                <form class="bg-white border rounded shadow p-3"><label class="form-label">Ownership Document</label><input class="form-control" type="file" id="documentToUpload"><label class="form-label">Bullion Details</label><textarea class="form-control"></textarea><label class="form-label">Bullion NFT ID (must be unique)</label><input class="form-control" type="number" id="documentId">
-                    <hr><button class="btn btn-primary" id="createNewBullionBtn" type="button">Save to Blockchain</button>
+                <form class="bg-white border rounded shadow p-3"><label class="form-label">Ownership Document</label><input class="form-control" type="file" id="documentToUpload"><label class="form-label">Bullion Details</label><textarea class="form-control" id="bullionDetailsText">Some details here...</textarea><label class="form-label">Bullion NFT ID (must be unique)</label><input class="form-control" type="number" id="documentId">
+                    <hr><button class="btn btn-primary" id="createNewBullionBtn" type="button"><span class="spinner-border spinner-border-sm visually-hidden" role="status"></span><span>Save to Blockchain</span></button>
                 </form>
             </div>
         </div>
