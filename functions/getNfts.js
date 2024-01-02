@@ -1,7 +1,7 @@
 export async function onRequest(context) {
-  // console.log(context.request);
+  console.log(context.request);
 
-  //try {
+  try {
     const options = {method: 'GET', headers: {accept: 'application/json'}};
 
     const params = context.request.url.split('?').pop();
@@ -20,14 +20,19 @@ export async function onRequest(context) {
 
     const resp = await fetch(url, options)
     const json = await resp.json();
-    
-    const respFiltered = json.ownedNfts.map(x => 
+
+    const respFiltered = json.ownedNfts.map(x =>
       ({name: x.name, 
         tokenId: x.tokenId,
         desc: x.description, 
-        mint: x.mint.mintAddress, 
-        image: x.raw.metadata.image
+        mint: x.mint.mintAddress,
+        image: x.raw.metadata.image,
+        contract: x.contract.address
       }));
+
+    for (const nft of respFiltered) {
+      nft.mint = await getCachedMintAddress(context, nft.contract, nft.tokenId, nft.mint);
+    }
     
     const payload = {
       nft: respFiltered,
@@ -35,8 +40,21 @@ export async function onRequest(context) {
     }
     return new Response(JSON.stringify(payload), {status: 200});
 
-  //} catch(err) {
-  //  console.log(err);
-  //  return new Response(err, {status: 500});
-  //}
+  } catch(err) {
+    console.log(err);
+    // return new Response(err, {status: 500});
+    throw err;
+  }
+}
+
+async function getCachedMintAddress(context, contract, tokenId, alchemyCahcedMintAddress) {
+  const key = `${contract}-${tokenId}`;
+
+  if (alchemyCahcedMintAddress) {
+    context.env.MINT_CACHE.delete(key);
+    return alchemyCahcedMintAddress;
+  } else {
+    const cached = await context.env.MINT_CACHE.get(key);
+    return cached;
+  }
 }
