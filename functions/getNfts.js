@@ -51,7 +51,7 @@ async function getCachedMintAddress(context, contract, tokenId, alchemyCahcedMin
   const key = `${contract}-${tokenId}`;
 
   if (alchemyCahcedMintAddress) {
-    context.env.MINT_CACHE.delete(key);
+    await context.env.MINT_CACHE.delete(key);
     return alchemyCahcedMintAddress;
   } else {
     const cached = await context.env.MINT_CACHE.get(key);
