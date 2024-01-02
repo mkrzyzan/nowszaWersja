@@ -1,7 +1,7 @@
 export async function onRequest(context) {
   // console.log(context.request);
 
-  try {
+  //try {
     const options = {method: 'GET', headers: {accept: 'application/json'}};
 
     const params = context.request.url.split('?').pop();
@@ -35,8 +35,8 @@ export async function onRequest(context) {
     }
     return new Response(JSON.stringify(payload), {status: 200});
 
-  } catch(err) {
-    console.log(err);
-    return new Response(err, {status: 500});
-  }
+  //} catch(err) {
+  //  console.log(err);
+  //  return new Response(err, {status: 500});
+  //}
 }
