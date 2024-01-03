@@ -25,15 +25,15 @@ async function createNewBullionFn() {
     switch (window.location.hostname) {
       case 'localhost':
       case '127.0.0.1':
-        url = 'http://localhost:8788/images';
+        url = 'http://localhost:8788';
         break;
       default:
-        url = 'https://nowszawersja.pages.dev/images';
+        url = 'https://nowszawersja.pages.dev';
         break;
     }
 
     // send POST request to the url https://nowszawersja.pages.dev/images using fetch API. Add the file data to the body of the request.
-    await fetch(url, {
+    await fetch(`${url}/images`, {
         method: 'POST',
         body: file,
         headers:{'x-filename':id}
@@ -43,15 +43,19 @@ async function createNewBullionFn() {
     const prov = new window.ethers.BrowserProvider(window.ethereum);
     const signer = await prov.getSigner(currentAddress);
 
-    const contractAddress = '0x3b7B8812ce2A40757965BE4f29127F831c95D97f';
+    const contractAddress = '0x096BCC72C9839d021B91FE91038c72DF5D8197dE';
     const abi = [
-      'function safeMint(address to, uint256 tokenId, string memory data, string memory pictureUrl) public',
+      'function safeMint(uint256 tokenId, string memory data, string memory pictureUrl) public',
     ]
     const contract = new window.ethers.Contract(contractAddress, abi, signer);
-    const tx = await contract.safeMint(currentAddress, id, nftText, `https://nowszawersja.pages.dev/images?file=${id}`);
+    const tx = await contract.safeMint(id, nftText, `https://nowszawersja.pages.dev/images?file=${id}`);
     const receipt = await tx.wait();
-
     console.log(receipt);
+
+    const cacheParams = new URLSearchParams({contract: contractAddress, tokenId: id, mint: currentAddress});
+    const cacheUrl = `${url}/putMintedCache?${cacheParams}`;
+    const cacheResp = await fetch(cacheUrl, {method: 'PUT'});
+    console.log(await cacheResp.text());
 
   } catch (err) {
     alert(err);
