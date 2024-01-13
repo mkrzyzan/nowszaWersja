@@ -21,7 +21,7 @@ async function connectButtonFn() {
         const signer = await provider.getSigner();
         const address = await signer.getAddress();
 
-        sessionStorage.setItem('address', address);
+        sessionStorage.setItem('address', address.toLowerCase());
 
     } catch (error) {
         console.log(error);

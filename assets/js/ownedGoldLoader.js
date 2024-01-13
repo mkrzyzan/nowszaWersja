@@ -1,10 +1,14 @@
 document.addEventListener('DOMContentLoaded', loadData);
-document.querySelector('.pagination a[aria-label=Next]').addEventListener('click', nextPage);
-document.querySelector('.pagination a[aria-label=Previous]').addEventListener('click', prevPage);
+// document.querySelector('.pagination a[aria-label=Next]').addEventListener('click', nextPage);
+// document.querySelector('.pagination a[aria-label=Previous]').addEventListener('click', prevPage);
 
 async function loadData() {
 
     const q = new URLSearchParams(window.location.search);
+
+    // sessionStorage.setItem('nextPageKey', data.pageKey);
+    const currentPage = parseInt(q.get('page')) || 0;
+
 
     switch (window.location.hostname) {
         case 'localhost':
@@ -16,31 +20,41 @@ async function loadData() {
           break;
       }
 
-    const pages = JSON.parse(sessionStorage.getItem('pages') || '[]');
-    const currentPage = pages[pages.length - 1];
+    // const pages = JSON.parse(sessionStorage.getItem('pages') || '[]');
+    // const currentPage = pages[pages.length - 1];
 
-    url = `${url}/getNfts?owner=0x0459620D616C6D827603d43539519FA320B831c2&pageKey=${currentPage}`;
+    url = `${url}/getNftExtra?owner=${sessionStorage.getItem('address')}&page=${currentPage}`;
     const resp = await fetch(url);
     const data = await resp.json();
     const tableData = data.nft.map(nft => `<tr><td>${nft.tokenId}</td><td>${nft.image}</td><td>${nft.desc}</td><td>${nft.desc}</td><td>${nft.desc}</td></tr>`).join('');
-    console.log(tableData);
+    // console.log(tableData);
 
     const tableBody = document.getElementById('ownedNftTableBody');
     tableBody.innerHTML = tableData;
 
-    sessionStorage.setItem('nextPageKey', data.pageKey);
+    const nextPage = currentPage + 1;
+    const prevPage = currentPage - 1;
+    document.querySelector('.pagination a[aria-label=Next]').href = `?page=${nextPage}`;
+    document.querySelector('.pagination a[aria-label=Previous]').href = `?page=${prevPage}`;
+    if (prevPage < 0) {
+        document.querySelector('.pagination a[aria-label=Previous]').classList.add('disabled');
+    }
+    if (nextPage >= data.pages) {
+        document.querySelector('.pagination a[aria-label=Next]').classList.add('disabled');
+    }
+    document.querySelector('.pagination a:not([aria-label])').innerHTML = `${currentPage + 1} / ${data.pages}`;
 }
 
 async function nextPage() {
-    const pages = JSON.parse(sessionStorage.getItem('pages') || '[]');
-    pages.push(sessionStorage.getItem('nextPageKey'));
-    sessionStorage.setItem('pages', JSON.stringify(pages));
+    // const pages = JSON.parse(sessionStorage.getItem('pages') || '[]');
+    // pages.push(sessionStorage.getItem('nextPageKey'));
+    // sessionStorage.setItem('pages', JSON.stringify(pages));
     await loadData();
 }
 
 async function prevPage() {
-    const pages = JSON.parse(sessionStorage.getItem('pages') || '[]');
-    sessionStorage.setItem('nextPageKey', pages.pop());
-    sessionStorage.setItem('pages', JSON.stringify(pages));
+    // const pages = JSON.parse(sessionStorage.getItem('pages') || '[]');
+    // sessionStorage.setItem('nextPageKey', pages.pop());
+    // sessionStorage.setItem('pages', JSON.stringify(pages));
     await loadData();
 }
