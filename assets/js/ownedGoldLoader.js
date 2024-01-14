@@ -26,11 +26,14 @@ async function loadData() {
     url = `${url}/getNftExtra?owner=${sessionStorage.getItem('address')}&page=${currentPage}`;
     const resp = await fetch(url);
     const data = await resp.json();
-    const tableData = data.nft.map(nft => `<tr><td>${nft.tokenId}</td><td>${nft.image}</td><td>${nft.desc}</td><td>${nft.desc}</td><td>${nft.desc}</td></tr>`).join('');
+    // const tableData = data.nft.map(nft => `<tr><td>${nft.tokenId}</td><td>${nft.image}</td><td>${nft.desc}</td><td>${nft.desc}</td><td>${nft.desc}</td></tr>`).join('');
     // console.log(tableData);
 
-    const tableBody = document.getElementById('ownedNftTableBody');
-    tableBody.innerHTML = tableData;
+    // const tableBody = document.getElementById('ownedNftTableBody');
+    // tableBody.innerHTML = tableData;
+    data.nft.forEach(element => {
+        addGoldBarToRow();
+    });
 
     const nextPage = currentPage + 1;
     const prevPage = currentPage - 1;
@@ -43,6 +46,24 @@ async function loadData() {
         document.querySelector('.pagination a[aria-label=Next]').classList.add('disabled');
     }
     document.querySelector('.pagination a:not([aria-label])').innerHTML = `${currentPage + 1} / ${data.pages}`;
+}
+
+const goldBarTemplate = document.getElementsByClassName('goldBarTemplate')[0];
+function addGoldBarToRow() {
+    const goldBarTemplates = document.getElementsByClassName('goldBarTemplate');
+    while(goldBarTemplates.length) {
+        goldBarTemplates[0].remove();
+    }
+
+    const goldBar = goldBarTemplate.cloneNode(true);
+    goldBar.classList.remove('placeholder-glow');
+    goldBar.classList.remove('goldBarTemplate');
+    goldBar.querySelector('h1').innerHTML = 'BKK';
+    goldBar.querySelector('h1').classList.remove('placeholder');
+    goldBar.querySelector('p').innerHTML = "MTS <br />96.00% <br /> 20.00g <br /> $4,264 <br />1.2178 ETH";
+    goldBar.querySelector('p').classList.remove('placeholder');
+
+    document.getElementById('goldBarsContainer').appendChild(goldBar);
 }
 
 async function nextPage() {
