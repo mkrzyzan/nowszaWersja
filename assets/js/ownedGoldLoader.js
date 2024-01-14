@@ -1,29 +1,13 @@
 document.addEventListener('DOMContentLoaded', loadData);
-// document.querySelector('.pagination a[aria-label=Next]').addEventListener('click', nextPage);
-// document.querySelector('.pagination a[aria-label=Previous]').addEventListener('click', prevPage);
+document.addEventListener('DOMContentLoaded', loadGoldOwnerDetails);
 
 async function loadData() {
 
     const q = new URLSearchParams(window.location.search);
 
-    // sessionStorage.setItem('nextPageKey', data.pageKey);
     const currentPage = parseInt(q.get('page')) || 0;
 
-
-    switch (window.location.hostname) {
-        case 'localhost':
-        case '127.0.0.1':
-          url = 'http://localhost:8788';
-          break;
-        default:
-          url = 'https://nowszawersja.pages.dev';
-          break;
-      }
-
-    // const pages = JSON.parse(sessionStorage.getItem('pages') || '[]');
-    // const currentPage = pages[pages.length - 1];
-
-    url = `${url}/getNftExtra?owner=${sessionStorage.getItem('address')}&page=${currentPage}`;
+    url = `${apiUrl}/getNftExtra?owner=${sessionStorage.getItem('address')}&page=${currentPage}`;
     const resp = await fetch(url);
     const data = await resp.json();
     // const tableData = data.nft.map(nft => `<tr><td>${nft.tokenId}</td><td>${nft.image}</td><td>${nft.desc}</td><td>${nft.desc}</td><td>${nft.desc}</td></tr>`).join('');
@@ -62,20 +46,22 @@ function addGoldBarToRow() {
     goldBar.querySelector('h1').classList.remove('placeholder');
     goldBar.querySelector('p').innerHTML = "MTS <br />96.00% <br /> 20.00g <br /> $4,264 <br />1.2178 ETH";
     goldBar.querySelector('p').classList.remove('placeholder');
+    goldBar.querySelector('a').href = `bullionDetails.html?id=14234`
 
     document.getElementById('goldBarsContainer').appendChild(goldBar);
 }
 
-async function nextPage() {
-    // const pages = JSON.parse(sessionStorage.getItem('pages') || '[]');
-    // pages.push(sessionStorage.getItem('nextPageKey'));
-    // sessionStorage.setItem('pages', JSON.stringify(pages));
-    await loadData();
-}
+async function loadGoldOwnerDetails() {
 
-async function prevPage() {
-    // const pages = JSON.parse(sessionStorage.getItem('pages') || '[]');
-    // sessionStorage.setItem('nextPageKey', pages.pop());
-    // sessionStorage.setItem('pages', JSON.stringify(pages));
-    await loadData();
+    url = `${apiUrl}/getOwnerSummary?owner=${sessionStorage.getItem('address')}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    const listGroup = document.getElementById('goldOwnerDetails');
+    const listGroupItems = listGroup.getElementsByTagName('li');
+    listGroupItems[0].querySelector('span').innerHTML = `# of Gold Bullion: ${data.goldBullionsNo} pcs`;
+    listGroupItems[1].querySelector('span').innerHTML = `# of Stored Locations: ${data.storedLocations} places`;
+    listGroupItems[2].querySelector('span').innerHTML = `Total Gold Weight: ${data.totalGoldWeight}`;
+    listGroupItems[3].querySelector('span').innerHTML = `Weighted average purity: ${data.weightedAvgPurity}`;
+    listGroupItems[4].querySelector('span').innerHTML = `Total Gold Value: ${data.totalGoldValue}`;
 }

@@ -8,16 +8,12 @@ if (window.location.pathname.includes('bullionDetails')) {
     // do nothing
 }
 
-function getUsername(address) {
-    // fetch username from the avacus endpoint
-    // https://apis.avacus.cc/1/secure-chat/v1/public/users/0x0459620D616C6D827603d43539519FA320B831c2
-    // parse the JSON response and return the username
-
-    return fetch(`https://apis.avacus.cc/1/secure-chat/v1/public/users/${address}`)
-        .then(response => response.json())
-        .then(data => {
-            console.log(data)
-            return data.display_name
-        })
-        .catch(err => console.log(err));
+switch (window.location.hostname) {
+    case 'localhost':
+    case '127.0.0.1':
+      var apiUrl = 'http://localhost:8788';
+      break;
+    default:
+      var apiUrl = 'https://nowszawersja.pages.dev';
+      break;
 }
