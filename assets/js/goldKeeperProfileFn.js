@@ -5,9 +5,19 @@ async function goldKeeperSummary() {
     const q = new URLSearchParams(window.location.search);
     const goldKeeperAddress = q.get('address');
 
-    url = `${apiUrl}/getGoldKeeperDetails?address=${goldKeeperAddress}`;
+    url = `${apiUrl}/getGoldKeeperSummary?address=${goldKeeperAddress}`;
     const resp = await fetch(url);
     const data = await resp.json();
+
+    document.getElementById('goldKeeperAddress').innerHTML = goldKeeperAddress;
+    document.getElementById('goldKeeperDetails').innerHTML = 
+    `Location: ${data.location}<br />
+    Keeping gold since: ${data.since}<br />
+    #no of gold bullions kept: ${data.goldBullionsKeptNo}<br />
+    storage type: ${data.storageType}<br />
+    total gold weight: ${data.totalGoldWeight}<br />
+    total gold value: ${data.totalGoldValue}<br />
+    `;
 }
 
 async function goldKeeperAssets() {

@@ -5,9 +5,6 @@ async function initialize() {
     const tokenId = q.get('id');
     const contractAddress = q.get('contractAddress');
 
-    // const pages = JSON.parse(sessionStorage.getItem('pages') || '[]');
-    // const currentPage = pages[pages.length - 1];
-
     url = `${apiUrl}/getBullionDetails?id=${tokenId}&contractAddress=${contractAddress}`;
     const resp = await fetch(url);
     const data = await resp.json();
@@ -17,13 +14,16 @@ async function initialize() {
     document.getElementById('goldHolder').innerHTML = data.goldHolder;
     document.getElementById('contractAddress').innerHTML = data.contractAddress;
     document.getElementById('image').src = data.image;
-    document.getElementById('location').innerHTML = data.location;
-    document.getElementById('weight').innerHTML = data.weight;
-    document.getElementById('purity').innerHTML = data.purity;
-    document.getElementById('nameSeries').innerHTML = data.nameSeries;
-    document.getElementById('minter').innerHTML = data.minter;
-    document.getElementById('shopPurchased').innerHTML = data.shopPurchased;
-    document.getElementById('valueUSD').innerHTML = data.valueUSD;
-    document.getElementById('valueETH').innerHTML = data.valueETH;
-    document.getElementById('timeToDepositPayment').innerHTML = data.timeToDepositPayment;
+
+    document.getElementById('goldBullionDetailsParagraph').innerHTML = `
+    Location: ${data.location}<br />
+    Weight: ${data.weight}<br />
+    Purity: ${data.purity}<br />
+    Name/Series: ${data.nameSeries}<br />
+    Minter: ${data.minter}<br />
+    Shop Purchased: ${data.shopPurchased}<br />
+    Value (USD): ${data.valueUSD}<br />
+    Value (ETH): ${data.valueETH}<br />`;
+
+    document.getElementById('timeToDepositPayment').innerHTML = `Next Fee Payment: ${data.timeToDepositPayment}`;
 }
