@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', goldKeeperSummary);
+// document.addEventListener('DOMContentLoaded', goldKeeperSummary);
 document.addEventListener('DOMContentLoaded', goldKeeperAssets);
 
 async function goldKeeperSummary() {
@@ -31,6 +31,17 @@ async function goldKeeperAssets() {
     data.nft.forEach(element => {
         addGoldBarToRow();
     });
+
+    document.getElementById('goldKeeperAddress').innerHTML = goldKeeperAddress;
+    document.getElementById('goldKeeperDetails').innerHTML = 
+    `Location: ${data.summary.location}<br />
+    Keeping gold since: ${data.summary.since}<br />
+    #no of gold bullions kept: ${data.summary.goldBullionsKeptNo}<br />
+    storage type: ${data.summary.storageType}<br />
+    total gold weight: ${data.summary.totalGoldWeight}<br />
+    total gold averga purity: ${data.summary.weightedAvgPurity}<br />
+    total gold value: ${data.summary.totalGoldValue}<br />
+    `;
 }
 
 

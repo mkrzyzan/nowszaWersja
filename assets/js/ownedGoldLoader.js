@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', loadData);
-document.addEventListener('DOMContentLoaded', loadGoldOwnerDetails);
 
 async function loadData() {
 
@@ -18,6 +17,16 @@ async function loadData() {
     data.nft.forEach(element => {
         addGoldBarToRow();
     });
+
+    // summary data
+    const listGroup = document.getElementById('goldOwnerDetails');
+    const listGroupItems = listGroup.getElementsByTagName('li');
+    listGroupItems[0].querySelector('span').innerHTML = `# of Gold Bullion: ${data.summary.goldBullionsKeptNo} pcs`;
+    listGroupItems[1].querySelector('span').innerHTML = `# of Stored Locations: ${data.summary.location} places`;
+    listGroupItems[2].querySelector('span').innerHTML = `Total Gold Weight: ${data.summary.totalGoldWeight}`;
+    listGroupItems[3].querySelector('span').innerHTML = `Weighted average purity: ${data.summary.weightedAvgPurity}`;
+    listGroupItems[4].querySelector('span').innerHTML = `Total Gold Value: ${data.summary.totalGoldValue}`;
+
 
     const nextPage = currentPage + 1;
     const prevPage = currentPage - 1;
@@ -49,19 +58,4 @@ function addGoldBarToRow() {
     goldBar.querySelector('a').href = `/bullionDetails.html?id=8888&contractAddress=0x096BCC72C9839d021B91FE91038c72DF5D8197dE`
 
     document.getElementById('goldBarsContainer').appendChild(goldBar);
-}
-
-async function loadGoldOwnerDetails() {
-
-    url = `${apiUrl}/getOwnerSummary?owner=${sessionStorage.getItem('address')}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-
-    const listGroup = document.getElementById('goldOwnerDetails');
-    const listGroupItems = listGroup.getElementsByTagName('li');
-    listGroupItems[0].querySelector('span').innerHTML = `# of Gold Bullion: ${data.goldBullionsNo} pcs`;
-    listGroupItems[1].querySelector('span').innerHTML = `# of Stored Locations: ${data.storedLocations} places`;
-    listGroupItems[2].querySelector('span').innerHTML = `Total Gold Weight: ${data.totalGoldWeight}`;
-    listGroupItems[3].querySelector('span').innerHTML = `Weighted average purity: ${data.weightedAvgPurity}`;
-    listGroupItems[4].querySelector('span').innerHTML = `Total Gold Value: ${data.totalGoldValue}`;
 }
