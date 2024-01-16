@@ -5,7 +5,7 @@ async function initialize() {
     const tokenId = q.get('id');
     const contractAddress = q.get('contractAddress');
 
-    url = `${apiUrl}/getBullionDetails?id=${tokenId}&contractAddress=${contractAddress}`;
+    url = `${apiUrl}/getBullionDetails?tokenId=${tokenId}&contractAddress=${contractAddress}&tokenType=ERC721`;
     const resp = await fetch(url);
     const data = await resp.json();
 
@@ -13,6 +13,7 @@ async function initialize() {
     document.getElementById('goldKeeperLink').href = `goldKeeperProfile.html?address=${data.goldKeeper}`;
     document.getElementById('goldHolder').innerHTML = data.goldHolder;
     document.getElementById('contractAddress').innerHTML = data.contractAddress;
+    document.getElementById('contractAddressLink').href = `https://sepolia.etherscan.io/address/${data.contractAddress}`;
     document.getElementById('image').src = data.image;
 
     document.getElementById('goldBullionDetailsParagraph').innerHTML = `
@@ -24,6 +25,14 @@ async function initialize() {
     Shop Purchased: ${data.shopPurchased}<br />
     Value (USD): ${data.valueUSD}<br />
     Value (ETH): ${data.valueETH}<br />`;
+
+    document.getElementById('card').innerHTML = `
+    ${data.minter}<br />
+    ${data.purity}<br />
+    ${data.weight}<br />
+    (USD): ${data.valueUSD}<br />
+    (ETH): ${data.valueETH}<br />
+    `
 
     document.getElementById('timeToDepositPayment').innerHTML = `Next Fee Payment: ${data.timeToDepositPayment}`;
 }
