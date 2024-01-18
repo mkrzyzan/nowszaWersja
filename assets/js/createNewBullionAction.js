@@ -43,7 +43,7 @@ async function createNewBullionFn() {
     const prov = new window.ethers.BrowserProvider(window.ethereum);
     const signer = await prov.getSigner(currentAddress);
 
-    const contractAddress = '0x096BCC72C9839d021B91FE91038c72DF5D8197dE';
+    const contractAddress = '0x610B3Bf741271913a193166101369a6569d9574e';
     const abi = [
       'function safeMint(uint256 tokenId, string memory data, string memory pictureUrl) public',
     ]

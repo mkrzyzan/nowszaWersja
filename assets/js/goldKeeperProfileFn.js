@@ -59,7 +59,7 @@ function addGoldBarToRow() {
     goldBar.querySelector('h1').classList.remove('placeholder');
     goldBar.querySelector('p').innerHTML = "MTS <br />96.00% <br /> 20.00g <br /> $4,264 <br />1.2178 ETH";
     goldBar.querySelector('p').classList.remove('placeholder');
-    goldBar.querySelector('a').href = `/bullionDetails.html?id=8888&contractAddress=0x096BCC72C9839d021B91FE91038c72DF5D8197dE`
+    goldBar.querySelector('a').href = `/bullionDetails.html?id=8888&contractAddress=0x610B3Bf741271913a193166101369a6569d9574e`
 
     document.getElementById('goldBarsContainer').appendChild(goldBar);
 }
