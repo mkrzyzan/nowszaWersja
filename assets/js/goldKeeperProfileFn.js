@@ -28,8 +28,8 @@ async function goldKeeperAssets() {
     const resp = await fetch(url);
     const data = await resp.json();
 
-    data.nft.forEach(element => {
-        addGoldBarToRow();
+    data.nft.forEach(bar => {
+        addGoldBarToRow(bar);
     });
 
     document.getElementById('goldKeeperAddress').innerHTML = goldKeeperAddress;
@@ -46,20 +46,23 @@ async function goldKeeperAssets() {
 
 
 const goldBarTemplate = document.getElementsByClassName('goldBarTemplate')[0];
-function addGoldBarToRow() {
+function addGoldBarToRow(bar) {
     const goldBarTemplates = document.getElementsByClassName('goldBarTemplate');
     while(goldBarTemplates.length) {
         goldBarTemplates[0].remove();
     }
+
+    const details = bar.desc.split(';');
+    console.log(bar);
 
     const goldBar = goldBarTemplate.cloneNode(true);
     goldBar.classList.remove('placeholder-glow');
     goldBar.classList.remove('goldBarTemplate');
     goldBar.querySelector('h1').innerHTML = 'BKK';
     goldBar.querySelector('h1').classList.remove('placeholder');
-    goldBar.querySelector('p').innerHTML = "MTS <br />96.00% <br /> 20.00g <br /> $4,264 <br />1.2178 ETH";
+    goldBar.querySelector('p').innerHTML = `${details[3]} <br />${details[0]} <br /> ${details[1]} <br /> $4,264 <br />1.2178 ETH`;
     goldBar.querySelector('p').classList.remove('placeholder');
-    goldBar.querySelector('a').href = `/bullionDetails.html?id=8888&contractAddress=0x610B3Bf741271913a193166101369a6569d9574e`
+    goldBar.querySelector('a').href = `/bullionDetails.html?id=${bar.tokenId}&contractAddress=${bar.contract}`
 
     document.getElementById('goldBarsContainer').appendChild(goldBar);
 }

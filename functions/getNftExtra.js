@@ -34,6 +34,7 @@ export async function onRequest(context) {
     // if there are no tokens, return empty response
     if (filtered.length === 0) {
         const payload = {
+            summary: {goldBullionsKeptNo: 0},
             nft: [],
             pages: numberOfPages
         }
