@@ -48,6 +48,25 @@ export async function onRequest(context) {
     const url = `https://eth-sepolia.g.alchemy.com/nft/v3/${api}/getNFTMetadataBatch`;
     const resp = await fetch(url, options)
     const json = await resp.json();
+
+    // get XAU/USD price
+    const xauUsdPriceRequest = {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "method": "eth_call",
+        "params": [
+          {
+            "to": "0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6",
+            "data": "0x50d25bcd"
+          }
+        ]
+    };
+    const xauUsdPriceOptions = {method: 'POST', headers: {accept: 'application/json', contentType: 'application/json'}, body: JSON.stringify(xauUsdPriceRequest)};
+    const xauUsdPriceUrl = `https://eth-mainnet.g.alchemy.com/v2/CwkfRZV0ZNQotCF7eWavhtZYuDmA_KN5`;
+    const xauUsdPriceResp = await fetch(xauUsdPriceUrl, xauUsdPriceOptions);
+    const xauUsdPriceJson = await xauUsdPriceResp.json();
+    const xauUsdPrice = parseInt(xauUsdPriceJson.result) / 1e8;
+    // console.log(xauUsdPrice);
     
     // pick only the fields we need
     const respFiltered = json.nfts.map(x =>({
@@ -55,7 +74,9 @@ export async function onRequest(context) {
         tokenId: x.tokenId,  
         desc: x.description, 
         image: x.raw.metadata.image,
-        contract: x.contract.address
+        contract: x.contract.address,
+        weight: parseFloat(x.description.split(';')[0]),
+        priceUsd: parseFloat(x.description.split(';')[0]) * xauUsdPrice * 0.035274
     }));
 
     // enrich the response with data from the history
@@ -67,7 +88,6 @@ export async function onRequest(context) {
 
     // summary
     const summary = {
-        totalGoldValue: 'USD 1,975.20',
         storageType: 'Safe Deposit Box',
         location: 'Bangkok',
         since: '2021-01-01',
@@ -77,6 +97,8 @@ export async function onRequest(context) {
         const dets = x.desc.split(';');
         const weight = parseFloat(dets[0]) || 0;
         const purity = weight != 0 ? (parseFloat(dets[1])/weight || 0) : 0;
+        const valUSD = weight * xauUsdPrice * 0.035274;
+        summary.totalGoldValue = summary.totalGoldValue ? summary.totalGoldValue + valUSD : valUSD;
         summary.totalGoldWeight = summary.totalGoldWeight ? summary.totalGoldWeight + weight : weight;
         summary.weightedAvgPurity = summary.weightedAvgPurity ? summary.weightedAvgPurity + purity : purity;
     });
