@@ -29,4 +29,5 @@ async function connectButtonFn() {
         sessionStorage.removeItem('address');
     }
     showAddress();
+    location.reload();
 }
