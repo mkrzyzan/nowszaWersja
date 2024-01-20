@@ -24,7 +24,9 @@ async function goldKeeperAssets() {
     const q = new URLSearchParams(window.location.search);
     const goldKeeperAddress = q.get('address').toLowerCase();
 
-    const url = `${apiUrl}/getNftExtra?mint=${goldKeeperAddress}`;
+    const currentPage = parseInt(q.get('page')) || 0;
+
+    const url = `${apiUrl}/getNftExtra?mint=${goldKeeperAddress}&page=${currentPage}`;
     const resp = await fetch(url);
     const data = await resp.json();
 
@@ -42,6 +44,19 @@ async function goldKeeperAssets() {
     total gold averga purity: ${data.summary.weightedAvgPurity}<br />
     total gold value: ${data.summary.totalGoldValue}<br />
     `;
+
+    const nextPage = currentPage + 1;
+    const prevPage = currentPage - 1;
+    document.querySelector('.pagination a[aria-label=Next]').href = `?page=${nextPage}&address=${goldKeeperAddress}`;
+    document.querySelector('.pagination a[aria-label=Previous]').href = `?page=${prevPage}&address=${goldKeeperAddress}`;
+    if (prevPage < 0) {
+        document.querySelector('.pagination a[aria-label=Previous]').classList.add('disabled');
+    }
+    if (nextPage >= data.pages) {
+        document.querySelector('.pagination a[aria-label=Next]').classList.add('disabled');
+    }
+    document.querySelector('.pagination a:not([aria-label])').innerHTML = `${currentPage + 1} / ${data.pages}`;
+
 }
 
 
