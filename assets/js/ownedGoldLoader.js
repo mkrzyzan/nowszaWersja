@@ -24,7 +24,7 @@ async function loadData() {
     listGroupItems[0].querySelector('span').innerHTML = `# of Gold Bullion: ${data.summary.goldBullionsKeptNo} pcs`;
     listGroupItems[1].querySelector('span').innerHTML = `# of Stored Locations: ${data.summary.location} places`;
     listGroupItems[2].querySelector('span').innerHTML = `Total Gold Weight: ${data.summary.totalGoldWeight}g`;
-    listGroupItems[3].querySelector('span').innerHTML = `Weighted average purity: ${data.summary.weightedAvgPurity}`;
+    listGroupItems[3].querySelector('span').innerHTML = `Weighted average purity: ${data.summary.weightedAvgPurity.toFixed(2)}%`;
     listGroupItems[4].querySelector('span').innerHTML = `Total Gold Value: \$${data.summary.totalGoldValue.toFixed(2)}`;
 
     if (data.summary.goldBullionsKeptNo === 0) {

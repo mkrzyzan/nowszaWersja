@@ -23,15 +23,14 @@ async function initialize() {
     Name/Series: ${data.nameSeries}<br />
     Minter: ${data.minter}<br />
     Shop Purchased: ${data.shopPurchased}<br />
-    Value (USD): ${data.valueUSD}<br />
-    Value (ETH): ${data.valueETH}<br />`;
+    Value (USD): ${data.valueUSD.toFixed(2)}<br />
+    `;
 
     document.getElementById('card').innerHTML = `
     ${data.minter}<br />
     ${data.purity}<br />
     ${data.weight}<br />
-    (USD): ${data.valueUSD}<br />
-    (ETH): ${data.valueETH}<br />
+    \$${data.valueUSD.toFixed(2)}<br />
     `
 
     document.getElementById('timeToDepositPayment').innerHTML = `Next Fee Payment: ${data.timeToDepositPayment}`;

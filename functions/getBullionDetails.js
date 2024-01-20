@@ -34,6 +34,24 @@ export async function onRequest(context) {
     const resp2 = await fetch(url2)
     const json2 = await resp2.json();
 
+    // get XAU/USD price
+    const xauUsdPriceRequest = {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "method": "eth_call",
+        "params": [
+            {
+            "to": "0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6",
+            "data": "0x50d25bcd"
+            }
+        ]
+    };
+    const xauUsdPriceOptions = {method: 'POST', headers: {accept: 'application/json', contentType: 'application/json'}, body: JSON.stringify(xauUsdPriceRequest)};
+    const xauUsdPriceUrl = `https://eth-mainnet.g.alchemy.com/v2/CwkfRZV0ZNQotCF7eWavhtZYuDmA_KN5`;
+    const xauUsdPriceResp = await fetch(xauUsdPriceUrl, xauUsdPriceOptions);
+    const xauUsdPriceJson = await xauUsdPriceResp.json();
+    const xauUsdPrice = parseInt(xauUsdPriceJson.result) / 1e8;
+
     const data = {
         goldKeeper: json.mint.mintAddress,
         goldHolder: json2.owners[0],
@@ -45,8 +63,7 @@ export async function onRequest(context) {
         nameSeries: descData[2],
         minter: descData[3],
         shopPurchased: descData[4],
-        valueUSD: '$1,975.20',  // <--- oracle or other API
-        valueETH: '1,975.20 ETH',
+        valueUSD: parseFloat(descData[0]) * (parseFloat(descData[1])/100) * xauUsdPrice * 0.035274,
         timeToDepositPayment: '2 days',  // <--- from our contract metadata
     }
 

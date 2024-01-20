@@ -76,7 +76,7 @@ export async function onRequest(context) {
         image: x.raw.metadata.image,
         contract: x.contract.address,
         weight: parseFloat(x.description.split(';')[0]),
-        priceUsd: parseFloat(x.description.split(';')[0]) * xauUsdPrice * 0.035274
+        priceUsd: parseFloat(x.description.split(';')[0]) * (parseFloat(x.description.split(';')[1])/100) * xauUsdPrice * 0.035274
     }));
 
     // enrich the response with data from the history
@@ -96,12 +96,13 @@ export async function onRequest(context) {
     enriched.forEach(x => {
         const dets = x.desc.split(';');
         const weight = parseFloat(dets[0]) || 0;
-        const purity = weight != 0 ? (parseFloat(dets[1])/weight || 0) : 0;
+        const purity = parseFloat(dets[1]) || 0;
         const valUSD = weight * xauUsdPrice * 0.035274;
         summary.totalGoldValue = summary.totalGoldValue ? summary.totalGoldValue + valUSD : valUSD;
         summary.totalGoldWeight = summary.totalGoldWeight ? summary.totalGoldWeight + weight : weight;
-        summary.weightedAvgPurity = summary.weightedAvgPurity ? summary.weightedAvgPurity + purity : purity;
+        summary.weightedAvgPurity = summary.weightedAvgPurity ? summary.weightedAvgPurity + purity*weight : purity*weight;
     });
+    summary.weightedAvgPurity = summary.weightedAvgPurity / summary.totalGoldWeight;
 
     // pagination
     const page = urlParams.get('page');

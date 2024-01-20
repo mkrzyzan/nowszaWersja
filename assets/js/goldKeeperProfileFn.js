@@ -21,7 +21,7 @@ async function goldKeeperAssets() {
     #no of gold bullions kept: ${data.summary.goldBullionsKeptNo}<br />
     storage type: ${data.summary.storageType}<br />
     total gold weight: ${data.summary.totalGoldWeight}g<br />
-    total gold averga purity: ${data.summary.weightedAvgPurity}<br />
+    total gold avg. purity: ${data.summary.weightedAvgPurity.toFixed(2)}%<br />
     total gold value: \$${data.summary.totalGoldValue.toFixed(2)}<br />
     `;
 
