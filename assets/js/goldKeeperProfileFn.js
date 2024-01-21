@@ -20,7 +20,7 @@ async function goldKeeperAssets() {
     Keeping gold since: ${data.summary.since}<br />
     #no of gold bullions kept: ${data.summary.goldBullionsKeptNo}<br />
     storage type: ${data.summary.storageType}<br />
-    total gold weight: ${data.summary.totalGoldWeight}g<br />
+    total gold weight: ${data.summary.totalGoldWeight.toFixed(2)}g<br />
     total gold avg. purity: ${data.summary.weightedAvgPurity.toFixed(2)}%<br />
     total gold value: \$${data.summary.totalGoldValue.toFixed(2)}<br />
     `;
@@ -53,8 +53,8 @@ function addGoldBarToRow(bar) {
     const goldBar = goldBarTemplate.cloneNode(true);
     goldBar.classList.remove('placeholder-glow');
     goldBar.classList.remove('goldBarTemplate');
-    goldBar.querySelector('h1').innerHTML = 'BKK';
-    goldBar.querySelector('h1').classList.remove('placeholder');
+    goldBar.querySelector('h2').innerHTML = 'BKK';
+    goldBar.querySelector('h2').classList.remove('placeholder');
     goldBar.querySelector('p').innerHTML = `${details[3]} <br />${details[0]} <br /> ${details[1]} <br /> \$${bar.priceUsd.toFixed(2)}`;
     goldBar.querySelector('p').classList.remove('placeholder');
     goldBar.querySelector('a').href = `/bullionDetails.html?id=${bar.tokenId}&contractAddress=${bar.contract}`

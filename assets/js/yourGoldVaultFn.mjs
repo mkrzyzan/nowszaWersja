@@ -16,17 +16,17 @@ async function loadData() {
         addGoldBarToRow(bar);
     });
 
-    // summary data
-    const listGroup = document.getElementById('goldOwnerDetails');
-    const listGroupItems = listGroup.getElementsByTagName('li');
-    listGroupItems[0].querySelector('span').innerHTML = `# of Gold Bullion: ${data.summary.goldBullionsKeptNo} pcs`;
-    listGroupItems[1].querySelector('span').innerHTML = `# of Stored Locations: ${data.summary.location} places`;
-    listGroupItems[2].querySelector('span').innerHTML = `Total Gold Weight: ${data.summary.totalGoldWeight}g`;
-    listGroupItems[3].querySelector('span').innerHTML = `Weighted average purity: ${data.summary.weightedAvgPurity.toFixed(2)}%`;
-    listGroupItems[4].querySelector('span').innerHTML = `Total Gold Value: \$${data.summary.totalGoldValue.toFixed(2)}`;
-
     if (data.summary.goldBullionsKeptNo === 0) {
         document.getElementById('goldBarsContainer').innerHTML = '<p class="text-center">No gold bars found.</p>';
+    } else {
+        // summary data
+        const listGroup = document.getElementById('goldOwnerDetails');
+        const listGroupItems = listGroup.getElementsByTagName('li');
+        listGroupItems[0].querySelector('span').innerHTML = `# of Gold Bullion: ${data.summary.goldBullionsKeptNo} pcs`;
+        listGroupItems[1].querySelector('span').innerHTML = `# of Stored Locations: ${data.summary.location} places`;
+        listGroupItems[2].querySelector('span').innerHTML = `Total Gold Weight: ${data.summary.totalGoldWeight}g`;
+        listGroupItems[3].querySelector('span').innerHTML = `Weighted average purity: ${data.summary.weightedAvgPurity.toFixed(2)}%`;
+        listGroupItems[4].querySelector('span').innerHTML = `Total Gold Value: \$${data.summary.totalGoldValue.toFixed(2)}`;
     }
 
     const nextPage = currentPage + 1;
@@ -54,8 +54,8 @@ function addGoldBarToRow(bar) {
     const goldBar = goldBarTemplate.cloneNode(true);
     goldBar.classList.remove('placeholder-glow');
     goldBar.classList.remove('goldBarTemplate');
-    goldBar.querySelector('h1').innerHTML = 'BKK';
-    goldBar.querySelector('h1').classList.remove('placeholder');
+    goldBar.querySelector('h2').innerHTML = 'BKK';
+    goldBar.querySelector('h2').classList.remove('placeholder');
     goldBar.querySelector('p').innerHTML = `${details[3]} <br />${details[0]} <br /> ${details[1]} <br /> \$${bar.priceUsd.toFixed(2)}`;
     goldBar.querySelector('p').classList.remove('placeholder');
     goldBar.querySelector('a').href = `/bullionDetails.html?id=${bar.tokenId}&contractAddress=${bar.contract}`
