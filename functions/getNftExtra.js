@@ -113,7 +113,7 @@ export async function onRequest(context) {
 
     // pagination
     const page = urlParams.get('page');
-    const enrichedPaginated = enriched.slice(page*5, page*5+5);
+    const enrichedPaginated = enriched.slice(page*6, page*6+6);
 
     const payload = {
         summary,
