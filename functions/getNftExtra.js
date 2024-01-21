@@ -24,6 +24,13 @@ export async function onRequest(context) {
     if (urlParams.has('owner')) {
         filtered = filtered.filter(x => x.owner === urlParams.get('owner'));
     }
+    if (urlParams.has('isOwnerNull')) {
+        if (urlParams.get('isOwnerNull') === 'true') {
+            filtered = filtered.filter(x => x.owner === null);
+        } else {
+            filtered = filtered.filter(x => x.owner !== null);
+        }
+    }
     if (urlParams.has('mint')) {
         filtered = filtered.filter(x => x.mint === urlParams.get('mint'));
     }

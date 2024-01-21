@@ -11,7 +11,7 @@ async function initialize() {
 
     document.getElementById('goldKeeper').innerHTML = data.goldKeeper;
     document.getElementById('goldKeeperLink').href = `goldKeeperProfile.html?address=${data.goldKeeper}`;
-    document.getElementById('goldHolder').innerHTML = data.goldHolder;
+    document.getElementById('goldHolder').innerHTML = data.goldHolder.toLowerCase() != data.goldKeeper.toLowerCase() ? data.goldHolder : 'Not yet sold';
     document.getElementById('contractAddress').innerHTML = data.contractAddress;
     document.getElementById('contractAddressLink').href = `https://sepolia.etherscan.io/address/${data.contractAddress}`;
     document.getElementById('image').src = data.image;
