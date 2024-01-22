@@ -1,5 +1,5 @@
 export async function onRequest(context) {
-    console.log(context);
+    // console.log(context);
 
     const headers = new Headers({
         'Access-Control-Allow-Origin': '*',
@@ -34,8 +34,6 @@ export async function onRequest(context) {
     if (urlParams.has('mint')) {
         filtered = filtered.filter(x => x.mint === urlParams.get('mint'));
     }
-    const numberOfPages = Math.ceil(filtered.length / 6);
-    // console.log(filtered);
 
 
     // if there are no tokens, return empty response
@@ -93,31 +91,42 @@ export async function onRequest(context) {
         fromLogs: extraData.get(`${x.contract}-${x.tokenId}`.toLowerCase()),
     }));
 
-    // summary
-    const summary = {
-        storageType: 'Safe Deposit Box',
-        location: 'Bangkok',
-        since: '2021-01-01',
-        goldBullionsKeptNo: enriched.length,
-    };
-    enriched.forEach(x => {
-        const dets = x.desc.split(';');
-        const weight = parseFloat(dets[0]) || 0;
-        const purity = parseFloat(dets[1]) || 0;
-        const valUSD = weight * xauUsdPrice * 0.035274;
-        summary.totalGoldValue = summary.totalGoldValue ? summary.totalGoldValue + valUSD : valUSD;
-        summary.totalGoldWeight = summary.totalGoldWeight ? summary.totalGoldWeight + weight : weight;
-        summary.weightedAvgPurity = summary.weightedAvgPurity ? summary.weightedAvgPurity + purity*weight : purity*weight;
-    });
-    summary.weightedAvgPurity = summary.weightedAvgPurity / summary.totalGoldWeight;
+    const nftsGroupedByKeepers = enriched.reduce((acc, x) => {
+        const keeperAcc = acc.get(x.fromLogs.mint) || {weight: 0, priceUsd: 0, address: x.fromLogs.mint};
+        keeperAcc.weight += x.weight;
+        keeperAcc.priceUsd += x.priceUsd;
+        acc.set(x.fromLogs.mint, keeperAcc);
+        return acc;
+    }, new Map());
+
+    const numberOfPages = Math.ceil(nftsGroupedByKeepers.size / 6);
+    // console.log(filtered);
+
+    // // summary
+    // const summary = {
+    //     storageType: 'Safe Deposit Box',
+    //     location: 'Bangkok',
+    //     since: '2021-01-01',
+    //     goldBullionsKeptNo: enriched.length,
+    // };
+    // enriched.forEach(x => {
+    //     const dets = x.desc.split(';');
+    //     const weight = parseFloat(dets[0]) || 0;
+    //     const purity = parseFloat(dets[1]) || 0;
+    //     const valUSD = weight * xauUsdPrice * 0.035274;
+    //     summary.totalGoldValue = summary.totalGoldValue ? summary.totalGoldValue + valUSD : valUSD;
+    //     summary.totalGoldWeight = summary.totalGoldWeight ? summary.totalGoldWeight + weight : weight;
+    //     summary.weightedAvgPurity = summary.weightedAvgPurity ? summary.weightedAvgPurity + purity*weight : purity*weight;
+    // });
+    // summary.weightedAvgPurity = summary.weightedAvgPurity / summary.totalGoldWeight;
 
     // pagination
-    const page = urlParams.get('page');
-    const enrichedPaginated = enriched.slice(page*6, page*6+6);
+    // const page = urlParams.get('page');
+    // const enrichedPaginated = enriched.slice(page*6, page*6+6);
 
     const payload = {
-        summary,
-        nft: enrichedPaginated,
+        // summary,
+        keepers: Array.from(nftsGroupedByKeepers.values()),
         pages: numberOfPages
     }
 
