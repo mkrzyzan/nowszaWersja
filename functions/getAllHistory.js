@@ -40,17 +40,20 @@ export async function onRequest(context) {
     // processing
     const tokens = new Map();
     for (const event of json.result) {
-        const key = `${event.address}-${event.topics[3]}`;
+        const tokenId = Number(event.topics[3]);
+        const key = `${event.address.toLowerCase()}-${tokenId}`;
         if (event.topics[1] === "0x0000000000000000000000000000000000000000000000000000000000000000") {   
             // minting event (always first for the token)
             // process
+            const mintAddress = '0x'+event.topics[2].slice(26);
             tokens.set(key, {
                 address: event.address,
-                tokenId: Number(event.topics[3]),
-                mint: '0x'+event.topics[2].slice(26), 
+                tokenId: tokenId,
+                mint: mintAddress, 
                 blockNumber: Number(event.blockNumber),
                 owner: null, 
             });
+            await context.env.MINT_CACHE.put(key, mintAddress);
         } else if (event.topics[2] === "0x0000000000000000000000000000000000000000000000000000000000000000") {
             // burn event
             // process

@@ -1,5 +1,5 @@
 export async function onRequest(context) {
-    console.log(context);
+    // console.log(context);
 
     const headers = new Headers({
         'Access-Control-Allow-Origin': '*',

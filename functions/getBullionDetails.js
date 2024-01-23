@@ -1,5 +1,5 @@
 export async function onRequest(context) {
-    console.log(context.request);
+    // console.log(context.request);
 
     const headers = new Headers({
         'Access-Control-Allow-Origin': '*',
@@ -51,9 +51,12 @@ export async function onRequest(context) {
     const xauUsdPriceResp = await fetch(xauUsdPriceUrl, xauUsdPriceOptions);
     const xauUsdPriceJson = await xauUsdPriceResp.json();
     const xauUsdPrice = parseInt(xauUsdPriceJson.result) / 1e8;
+    
+    const key = `${respData.contract.toLowerCase()}-${respData.tokenId}`;
+    const mintAddress = await context.env.MINT_CACHE.get(key);
 
     const data = {
-        goldKeeper: json.mint.mintAddress,
+        goldKeeper: mintAddress,
         goldHolder: json2.owners[0],
         contractAddress: params.get('contractAddress'),
         image: respData.image,
