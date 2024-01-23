@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', loadData);
 
+import { shortenAddress } from './funkcje.mjs';
+
 async function loadData() {
 
     const q = new URLSearchParams(window.location.search);
@@ -13,7 +15,7 @@ async function loadData() {
     data.keepers.forEach(goldKeeper => {
         document.getElementById('goldKeepersTableBody').innerHTML += `
             <tr>
-                <td><a href="/goldKeeperProfile.html?address=${goldKeeper.address}">${goldKeeper.address}</a></td>
+                <td><a href="/goldKeeperProfile.html?address=${goldKeeper.address}">${shortenAddress(goldKeeper.address)}</a></td>
                 <td>${goldKeeper.blockNumber}</td>
                 <td>${goldKeeper.weight.toFixed(2)}g</td>
                 <td>\$${goldKeeper.priceUsd.toFixed(2)}</td>
