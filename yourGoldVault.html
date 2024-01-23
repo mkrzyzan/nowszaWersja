@@ -17,8 +17,8 @@
                 </div>
                 <div class="offcanvas-body"><a class="navbar-brand" href="yourGoldVault.html">Gold Vault</a>
                     <ul class="navbar-nav">
-                        <li class="nav-item"><a class="nav-link" href="yourGoldVault.html">Your Gold NFT Vault</a></li>
-                        <li class="nav-item"><a class="nav-link active" href="index.html">NFT Marketplace</a></li>
+                        <li class="nav-item"><a class="nav-link active" href="yourGoldVault.html">Your Gold NFT Vault</a></li>
+                        <li class="nav-item"><a class="nav-link" href="index.html">NFT Marketplace</a></li>
                         <li class="nav-item"><a class="nav-link" href="create.html">Mint Gold</a></li>
                         <li class="nav-item"><a class="nav-link" href="goldKeeperList.html">Gold Keepers</a></li>
                     </ul>
@@ -27,19 +27,19 @@
         </div>
     </nav>
     <div class="container">
-        <div class="row d-lg-flex justify-content-md-center">
-            <div class="col-md-5">
-                <form><select class="form-select">
-                        <optgroup label="Location">
-                            <option value="12" selected="">Thailand</option>
-                            <option value="13">Bangkok</option>
-                            <option value="14">Hongkong</option>
-                        </optgroup>
-                    </select></form>
-                <p class="text-center">Minted &amp; On Sale</p>
+        <div class="row d-md-flex d-lg-flex justify-content-md-center justify-content-lg-center">
+            <div class="col-md-6 col-lg-4 mb-4">
+                <h1>Your Gold Vault</h1>
+                <ul class="list-group" id="goldOwnerDetails">
+                    <li class="list-group-item"><span># of Gold Bullion: 0 pcs</span></li>
+                    <li class="list-group-item"><span># of Stored Locations: 0 places</span></li>
+                    <li class="list-group-item"><span>Total Gold Weight: 0g</span></li>
+                    <li class="list-group-item"><span>Weighted average purity: undefined</span></li>
+                    <li class="list-group-item"><span>Total Gold Value: undefined</span></li>
+                </ul>
             </div>
         </div>
-        <div class="row justify-content-center" id="goldBarsMinted">
+        <div class="row justify-content-center" id="goldBarsContainer">
             <div class="col-auto placeholder-glow goldBarTemplate">
                 <h2 class="text-center placeholder">BKK</h2>
                 <div class="border rounded" style="background: linear-gradient(-33deg, #9d7600 0%, white 100%);">
@@ -62,55 +62,20 @@
         <div class="row justify-content-center">
             <div class="col-auto">
                 <nav class="mt-4" style="padding-top: 0px;">
-                    <ul class="pagination" id="goldBarsMintedPagination">
-                        <li class="page-item"><a class="page-link" aria-label="Previous"><span aria-hidden="true">«</span></a></li>
-                        <li class="page-item"><a class="page-link" href="#">0/0</a></li>
-                        <li class="page-item"><a class="page-link" aria-label="Next"><span aria-hidden="true">»</span></a></li>
-                    </ul>
-                </nav>
-                <p class="text-center">Minted &amp; Sold</p>
-            </div>
-        </div>
-        <div class="row justify-content-center" id="goldBarsMintedSold">
-            <div class="col-auto placeholder-glow goldBarTemplate">
-                <h2 class="text-center placeholder">BKK</h2>
-                <div class="border rounded" style="background: linear-gradient(-33deg, #9d7600 0%, white 100%);">
-                    <p class="placeholder p-3">MTS<br>96.00%<br>20.00g<br>$4,264<br>1.2178 ETH</p>
-                </div><a href="bullionDetails.html">Show more...</a>
-            </div>
-            <div class="col-auto placeholder-glow goldBarTemplate">
-                <h2 class="text-center placeholder">BKK</h2>
-                <div class="border rounded" style="background: linear-gradient(-33deg, #9d7600 0%, white 100%);">
-                    <p class="placeholder p-3">MTS<br>96.00%<br>20.00g<br>$4,264<br>1.2178 ETH</p>
-                </div>
-            </div>
-            <div class="col-auto placeholder-glow goldBarTemplate">
-                <h2 class="text-center placeholder">BKK</h2>
-                <div class="border rounded" style="background: linear-gradient(-33deg, #9d7600 0%, white 100%);">
-                    <p class="placeholder p-3">MTS<br>96.00%<br>20.00g<br>$4,264<br>1.2178 ETH</p>
-                </div>
-            </div>
-        </div>
-        <div class="row justify-content-center">
-            <div class="col-auto">
-                <nav class="mt-4" style="padding-top: 0px;">
-                    <ul class="pagination" id="goldBarsMintedSoldPagination">
+                    <ul class="pagination">
                         <li class="page-item"><a class="page-link" aria-label="Previous"><span aria-hidden="true">«</span></a></li>
                         <li class="page-item"><a class="page-link" href="#">0/0</a></li>
                         <li class="page-item"><a class="page-link" aria-label="Next"><span aria-hidden="true">»</span></a></li>
                     </ul>
                 </nav>
             </div>
-        </div>
-        <div class="row">
-            <div class="col text-center"><button class="btn btn-primary" type="button">Request Minting a new Gold NFT</button></div>
         </div>
     </div>
     <script src="assets/bootstrap/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.1/ethers.umd.min.js"></script>
     <script src="assets/js/params.js"></script>
     <script src="assets/js/BlockchainConnection.js"></script>
-    <script src="assets/js/nftMarketplaceFn.mjs" type="module"></script>
+    <script src="assets/js/yourGoldVaultFn.mjs" type="module"></script>
 </body>
 
 </html>
