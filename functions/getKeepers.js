@@ -97,7 +97,6 @@ export async function onRequest(context) {
         keeperAcc.priceUsd += x.priceUsd;
         keeperAcc.blockNumber = Math.max(keeperAcc.blockNumber, x.fromLogs.blockNumber);
         acc.set(x.fromLogs.mint, keeperAcc);
-        console.log(x.fromLogs.blockNumber);
         return acc;
     }, new Map());
 
