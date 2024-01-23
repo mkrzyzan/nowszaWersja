@@ -85,17 +85,19 @@ export async function onRequest(context) {
     }));
 
     // enrich the response with data from the history
-    const extraData = new Map(filtered.map(x => [`${x.address}-${x.tokenId}`.toLowerCase(), {mint:x.mint, owner:x.owner}]));
+    const extraData = new Map(filtered.map(x => [`${x.address}-${x.tokenId}`.toLowerCase(), {mint:x.mint, owner:x.owner, blockNumber:x.blockNumber}]));
     const enriched = respFiltered.map(x => ({
         ...x, 
         fromLogs: extraData.get(`${x.contract}-${x.tokenId}`.toLowerCase()),
     }));
 
     const nftsGroupedByKeepers = enriched.reduce((acc, x) => {
-        const keeperAcc = acc.get(x.fromLogs.mint) || {weight: 0, priceUsd: 0, address: x.fromLogs.mint};
+        const keeperAcc = acc.get(x.fromLogs.mint) || {blockNumber: 0, weight: 0, priceUsd: 0, address: x.fromLogs.mint};
         keeperAcc.weight += x.weight;
         keeperAcc.priceUsd += x.priceUsd;
+        keeperAcc.blockNumber = Math.max(keeperAcc.blockNumber, x.fromLogs.blockNumber);
         acc.set(x.fromLogs.mint, keeperAcc);
+        console.log(x.fromLogs.blockNumber);
         return acc;
     }, new Map());
 

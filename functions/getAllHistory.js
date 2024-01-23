@@ -48,6 +48,7 @@ export async function onRequest(context) {
                 address: event.address,
                 tokenId: Number(event.topics[3]),
                 mint: '0x'+event.topics[2].slice(26), 
+                blockNumber: Number(event.blockNumber),
                 owner: null, 
             });
         } else if (event.topics[2] === "0x0000000000000000000000000000000000000000000000000000000000000000") {

@@ -14,7 +14,7 @@ async function loadData() {
         document.getElementById('goldKeepersTableBody').innerHTML += `
             <tr>
                 <td><a href="/keeperDetails.html?address=${goldKeeper.address}">${goldKeeper.address}</a></td>
-                <td>${goldKeeper.weight.toFixed(2)}g</td>
+                <td>${goldKeeper.blockNumber}</td>
                 <td>${goldKeeper.weight.toFixed(2)}g</td>
                 <td>\$${goldKeeper.priceUsd.toFixed(2)}</td>
             </tr>
