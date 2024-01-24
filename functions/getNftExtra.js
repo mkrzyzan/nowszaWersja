@@ -16,7 +16,8 @@ export async function onRequest(context) {
 
     // get all the tokens
     const origin = new URL(context.request.url).origin;
-    const tokens = await fetch(`${origin}/getAllHistory`, {method: 'GET', headers: {accept: 'application/json'}});
+    const cf = {cacheTtl: 60, cacheEverything: true};
+    const tokens = await fetch(`${origin}/getAllHistory`, {method: 'GET', headers: {accept: 'application/json'}, cf:cf});
     const tokensJson = await tokens.json();
 
     // filter history here
