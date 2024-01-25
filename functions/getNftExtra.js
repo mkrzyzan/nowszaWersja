@@ -14,14 +14,20 @@ export async function onRequest(context) {
     const params = context.request.url.split('?').pop();
     const urlParams = new URLSearchParams(params);
 
-    // get all the tokens
-    const origin = new URL(context.request.url).origin;
-    const cf = {cacheTtl: 60, cacheEverything: true};
-    const tokens = await fetch(`${origin}/getAllHistory`, {method: 'GET', headers: {accept: 'application/json'}, cf:cf});
-    const tokensJson = await tokens.json();
+    // get all the tokens (with history)
+    const hist = await context.env.MINT_CACHE.get('history');
+    let cachedHistory = JSON.parse(hist || '{"timestamp":0}')
+    if (cachedHistory.timestamp + 15*1000 < Date.now()) {
+        const origin = new URL(context.request.url).origin;
+        const tokens = await fetch(`${origin}/getAllHistory`, {method: 'GET', headers: {accept: 'application/json'}});
+        const tokensJson = await tokens.json();
+        const historyToCache = {timestamp: Date.now(), tokensJson};
+        await context.env.MINT_CACHE.put('history', JSON.stringify(historyToCache));
+        cachedHistory = historyToCache;
+    }
 
     // filter history here
-    let filtered = tokensJson;
+    let filtered = cachedHistory.tokensJson;
     if (urlParams.has('owner')) {
         filtered = filtered.filter(x => x.owner === urlParams.get('owner'));
     }
