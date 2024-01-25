@@ -5,6 +5,7 @@ export async function onRequest(context) {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': '*',
         'Access-Control-Allow-Methods': '*',
+        'Cache-Control': 'max-age=60',
     });
 
     if (context.request.method === 'OPTIONS') {
