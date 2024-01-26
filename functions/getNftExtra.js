@@ -18,7 +18,7 @@ export async function onRequest(context) {
     // get all the tokens (with history)
     const hist = await context.env.MINT_CACHE.get('history');
     let cachedHistory = JSON.parse(hist || '{"timestamp":0}')
-    if (cachedHistory.timestamp + 60*1000 < Date.now()) {
+    if (cachedHistory.timestamp + 10*60*1000 < Date.now()) {
         const origin = new URL(context.request.url).origin;
         const tokens = await fetch(`${origin}/getAllHistory`, {method: 'GET', headers: {accept: 'application/json'}});
         const tokensJson = await tokens.json();
