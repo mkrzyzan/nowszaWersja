@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', initialize);
 
 async function initialize() {
+    const vaultMappings = await fetch(`${apiUrl}/getVaultSummary`);
+    const vaultMappingsJson = await vaultMappings.json();
+
     const q = new URLSearchParams(window.location.search);
     const tokenId = q.get('id');
     const contractAddress = q.get('contractAddress');
@@ -15,9 +18,10 @@ async function initialize() {
     document.getElementById('contractAddress').innerHTML = data.contractAddress;
     document.getElementById('contractAddressLink').href = `https://sepolia.etherscan.io/address/${data.contractAddress}`;
     document.getElementById('image').src = data.image;
+    document.getElementById('location').innerHTML = vaultMappingsJson[data.contractAddress.toLowerCase()].locationSymbol;
 
     document.getElementById('goldBullionDetailsParagraph').innerHTML = `
-    Location: ${data.location}<br />
+    Location: ${vaultMappingsJson[data.contractAddress.toLowerCase()].location}<br />
     Weight: ${data.weight}<br />
     Purity: ${data.purity}<br />
     Name/Series: ${data.nameSeries}<br />

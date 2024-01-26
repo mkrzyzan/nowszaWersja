@@ -1,6 +1,10 @@
 document.addEventListener('DOMContentLoaded', goldKeeperAssets);
+let vaultMappingsJson = {};
 
 async function goldKeeperAssets() {
+    const vaultMappings = await fetch(`${apiUrl}/getVaultSummary`);
+    vaultMappingsJson = await vaultMappings.json();
+
     const q = new URLSearchParams(window.location.search);
     const goldKeeperAddress = q.get('address').toLowerCase();
 
@@ -53,7 +57,7 @@ function addGoldBarToRow(bar) {
     const goldBar = goldBarTemplate.cloneNode(true);
     goldBar.classList.remove('placeholder-glow');
     goldBar.classList.remove('goldBarTemplate');
-    goldBar.querySelector('h2').innerHTML = 'BKK';
+    goldBar.querySelector('h2').innerHTML = vaultMappingsJson[bar.contract.toLowerCase()].locationSymbol;
     goldBar.querySelector('h2').classList.remove('placeholder');
     goldBar.querySelector('p').innerHTML = `${details[3]} <br />${details[0]} <br /> ${details[1]} <br /> \$${bar.priceUsd.toFixed(2)}`;
     goldBar.querySelector('p').classList.remove('placeholder');

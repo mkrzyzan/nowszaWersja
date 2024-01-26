@@ -61,7 +61,6 @@ export async function onRequest(context) {
         goldHolder: json2.owners[0],
         contractAddress: params.get('contractAddress'),
         image: respData.image,
-        location: 'Bangkok', // <-- in contract metadata
         weight: descData[0],
         purity: descData[1],
         nameSeries: descData[2],

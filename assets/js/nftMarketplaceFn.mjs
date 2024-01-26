@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', loadNulls);
 document.addEventListener('DOMContentLoaded', loadNotNulls);
 
+let vaultMappingsJson = {};
+
 async function loadNotNulls() {
     await loadData(false, 'goldBarsMintedSold', 'goldBarsMintedSoldPagination');
 }
@@ -9,6 +11,9 @@ async function loadNulls() {
 }
 
 async function loadData(isNull, containerId, paginationId) {
+
+    const vaultMappings = await fetch(`${apiUrl}/getVaultSummary`);
+    vaultMappingsJson = await vaultMappings.json();
 
     const q = new URLSearchParams(window.location.search);
 
@@ -53,7 +58,7 @@ function addGoldBarToRow(bar) {
     const goldBar = goldBarTemplate.cloneNode(true);
     goldBar.classList.remove('placeholder-glow');
     goldBar.classList.remove('goldBarTemplate');
-    goldBar.querySelector('h2').innerHTML = 'BKK';
+    goldBar.querySelector('h2').innerHTML = vaultMappingsJson[bar.contract.toLowerCase()].locationSymbol;
     goldBar.querySelector('h2').classList.remove('placeholder');
     goldBar.querySelector('p').innerHTML = `${details[3]} <br />${details[0]} <br /> ${details[1]} <br /> \$${bar.priceUsd.toFixed(2)}`;
     goldBar.querySelector('p').classList.remove('placeholder');
