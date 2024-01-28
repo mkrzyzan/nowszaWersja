@@ -15,7 +15,15 @@ export async function onRequest(context) {
         '0x58a67411665ba2831ca946058f948c1b0d732cac': {
             location: 'Bangkok',
             locationSymbol: 'BKK'
-        }
+        },
+        '0x58a67411665ba2831ca946058f948c1b0d732cad': {
+            location: 'Singapore',
+            locationSymbol: 'SGP'
+        },
+        '0x58a67411665ba2831ca946058f948c1b0d732cae': {
+            location: 'Hong Kong',
+            locationSymbol: 'HKG'
+        },
     }
 
     return Response.json(data, {headers});

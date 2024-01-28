@@ -18,7 +18,8 @@ async function goldKeeperAssets() {
         addGoldBarToRow(bar);
     });
 
-    document.getElementById('goldKeeperAddress').innerHTML = goldKeeperAddress;
+    document.getElementById('goldKeeperAddress').innerHTML = shortenAddress(goldKeeperAddress);
+    document.getElementById('goldKeeperAddressLink').href = `https://avacus.cc/profile/${goldKeeperAddress}`;
     document.getElementById('goldKeeperDetails').innerHTML = 
     `Location: ${data.summary.location}<br />
     Keeping gold since: ${data.summary.since}<br />
@@ -64,4 +65,9 @@ function addGoldBarToRow(bar) {
     goldBar.querySelector('a').href = `/bullionDetails.html?id=${bar.tokenId}&contractAddress=${bar.contract}`
 
     document.getElementById('goldBarsContainer').appendChild(goldBar);
+}
+
+function shortenAddress(address) {
+    // short the address to 0x1234...5678
+    return address.slice(0, 6) + '...' + address.slice(-4);
 }

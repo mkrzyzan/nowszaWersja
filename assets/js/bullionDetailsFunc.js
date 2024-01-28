@@ -12,9 +12,11 @@ async function initialize() {
     const resp = await fetch(url);
     const data = await resp.json();
 
+    const notSold = data.goldHolder.toLowerCase() != data.goldKeeper.toLowerCase();
     document.getElementById('goldKeeper').innerHTML = data.goldKeeper;
     document.getElementById('goldKeeperLink').href = `goldKeeperProfile.html?address=${data.goldKeeper}`;
-    document.getElementById('goldHolder').innerHTML = data.goldHolder.toLowerCase() != data.goldKeeper.toLowerCase() ? data.goldHolder : 'Not yet sold';
+    document.getElementById('goldHolder').innerHTML = notSold ? data.goldHolder : 'Contact Gold Keeper to Purchase';
+    document.getElementById('goldHolderLink').href = `https://avacus.cc/profile/${data.goldHolder}`;
     document.getElementById('contractAddress').innerHTML = data.contractAddress;
     document.getElementById('contractAddressLink').href = `https://sepolia.etherscan.io/address/${data.contractAddress}`;
     document.getElementById('image').src = data.image;
