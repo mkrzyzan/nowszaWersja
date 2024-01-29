@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', initialize);
+document.getElementById('setFeesBtn').addEventListener('click', setFees);
+document.getElementById('payFeesBtn').addEventListener('click', payFees);
+document.getElementById('collectFeeBtn').addEventListener('click', collect);
 
 async function initialize() {
     const vaultMappings = await fetch(`${apiUrl}/getVaultSummary`);
@@ -30,6 +33,7 @@ async function initialize() {
     Minter: ${data.minter}<br />
     Shop Purchased: ${data.shopPurchased}<br />
     Value (USD): ${data.valueUSD.toFixed(2)}<br />
+    Next Fee Payment: Loading...<br />
     `;
 
     document.getElementById('card').innerHTML = `
@@ -40,4 +44,97 @@ async function initialize() {
     `
 
     document.getElementById('timeToDepositPayment').innerHTML = `Next Fee Payment: ${data.timeToDepositPayment}`;
+}
+
+async function setFees() {
+    try {
+        document.getElementById('spinnerSet').classList.remove('visually-hidden');
+        document.getElementById('setFeesBtn').classList.add('disabled');
+        const q = new URLSearchParams(window.location.search);
+
+        const tokenId = q.get('id');
+        const contractAddress = q.get('contractAddress');
+        const fee = document.getElementById('feesToSet').value;
+        const dueDate = document.getElementById('feesToSetDueTo').value;
+
+        console.log(tokenId, contractAddress, fee, dueDate);
+
+        const provider = new window.ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+
+        const abi = [
+            'function setDespositFees(uint256 tokenId, uint256 fee, uint256 dueDateSec) public'
+        ];
+
+        const contract = new window.ethers.Contract(contractAddress, abi, signer);
+        const tx = await contract.setDespositFees(tokenId, fee, dueDate);
+        const receipt = await tx.wait();
+        console.log(receipt);
+        console.log('finish!');
+    } finally {
+        document.getElementById('spinnerSet').classList.add('visually-hidden');
+        document.getElementById('setFeesBtn').classList.remove('disabled');
+    }
+}
+
+async function payFees() {
+    try {
+        document.getElementById('spinnerPay').classList.remove('visually-hidden');
+        document.getElementById('payFeesBtn').classList.add('disabled');
+        const q = new URLSearchParams(window.location.search);
+
+        const tokenId = q.get('id');
+        const contractAddress = q.get('contractAddress');
+        const fee = document.getElementById('payFeesValue').value;
+
+        console.log(fee, tokenId, contractAddress);
+
+        const provider = new window.ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+
+        const abi = [
+            'function payDepositFees(uint256 tokenId) public payable'
+        ];
+
+        const contract = new window.ethers.Contract(contractAddress, abi, signer);
+        const tx = await contract.payDepositFees(tokenId, { value: fee });
+        const receipt = await tx.wait();
+        console.log(receipt);
+        console.log('finish!');
+    } finally {
+        document.getElementById('spinnerPay').classList.add('visually-hidden');
+        document.getElementById('payFeesBtn').classList.remove('disabled');
+    }
+}
+
+async function collect() {
+    try {
+        document.getElementById('spinnerCollect').classList.remove('visually-hidden');
+        document.getElementById('collectFeeBtn').classList.add('disabled');
+        const q = new URLSearchParams(window.location.search);
+
+        const tokenId = q.get('id');
+        const contractAddress = q.get('contractAddress');
+
+        console.log(tokenId, contractAddress);
+
+        const provider = new window.ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+
+        const abi = [
+            'function collectDepositFees(uint256 tokenId) public'
+        ];
+
+        const contract = new window.ethers.Contract(contractAddress, abi, signer);
+        const tx = await contract.collectDepositFees(tokenId);
+        const receipt = await tx.wait();
+        console.log(receipt);
+        console.log('finish!');
+    } finally {
+        document.getElementById('spinnerCollect').classList.add('visually-hidden');
+        document.getElementById('collectFeeBtn').classList.remove('disabled');
+    }
 }
