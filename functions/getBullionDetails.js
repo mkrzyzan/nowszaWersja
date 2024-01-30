@@ -52,6 +52,28 @@ export async function onRequest(context) {
     const xauUsdPriceResp = await fetch(xauUsdPriceUrl, xauUsdPriceOptions);
     const xauUsdPriceJson = await xauUsdPriceResp.json();
     const xauUsdPrice = parseInt(xauUsdPriceJson.result) / 1e8;
+
+    // get NFT fees data from our contract
+    const feesRequest = {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "method": "eth_call",
+        "params": [
+            {
+            "to": "0x58A67411665Ba2831CA946058f948C1B0D732Cac",
+            "data": "0xebdac090" + BigInt(respData.tokenId).toString(16).padStart(64, '0')
+            }
+        ]
+    };
+    const feesOptions = {method: 'POST', headers: {accept: 'application/json', contentType: 'application/json'}, body: JSON.stringify(feesRequest)};
+    const feesUrl = `https://eth-sepolia.g.alchemy.com/v2/${api}`;
+    const feesResp = await fetch(feesUrl, feesOptions);
+    const feesJson = await feesResp.json();
+    // console.log(feesJson);
+    const fees = '0x' + feesJson.result.slice(2).slice(64*1, 64*(1+1));
+    const dueDate = '0x' + feesJson.result.slice(2).slice(64*3, 64*(1+3));
+    // console.log(fees, dueDate);
+
     
     const key = `${respData.contract.toLowerCase()}-${respData.tokenId}`;
     const mintAddress = await context.env.MINT_CACHE.get(key);
@@ -67,7 +89,8 @@ export async function onRequest(context) {
         minter: descData[3],
         shopPurchased: descData[4],
         valueUSD: parseFloat(descData[0]) * (parseFloat(descData[1])/100) * xauUsdPrice * 0.035274,
-        timeToDepositPayment: '2 days',  // <--- from our contract metadata
+        timeToDepositPayment: dueDate,
+        fees: fees,
     }
 
     return new Response(JSON.stringify(data), {headers});

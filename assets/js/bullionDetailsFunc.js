@@ -25,6 +25,7 @@ async function initialize() {
     document.getElementById('image').src = data.image;
     document.getElementById('location').innerHTML = vaultMappingsJson[data.contractAddress.toLowerCase()].locationSymbol;
 
+    const dueDate = new Date(1000 * Number(BigInt(data.timeToDepositPayment)));
     document.getElementById('goldBullionDetailsParagraph').innerHTML = `
     Location: ${vaultMappingsJson[data.contractAddress.toLowerCase()].location}<br />
     Weight: ${data.weight}<br />
@@ -33,7 +34,8 @@ async function initialize() {
     Minter: ${data.minter}<br />
     Shop Purchased: ${data.shopPurchased}<br />
     Value (USD): ${data.valueUSD.toFixed(2)}<br />
-    Next Fee Payment: Loading...<br />
+    Next Fee Payment: ${dueDate.toLocaleDateString()} - ${dueDate.toLocaleTimeString()}<br />
+    Fee: ${BigInt(data.fees)}<br />
     `;
 
     document.getElementById('card').innerHTML = `
