@@ -43,7 +43,17 @@ async function initialize() {
     \$${data.valueUSD.toFixed(2)}<br />
     `
 
-    document.getElementById('timeToDepositPayment').innerHTML = `Next Fee Payment: ${data.timeToDepositPayment}`;
+    // emable button if goldkeeper is the user
+    if (data.goldKeeper.toLowerCase() == sessionStorage.getItem('address')) {
+        document.getElementById('setFeeBtnToggler').classList.remove('disabled');
+        document.getElementById('collectFeeBtn').classList.remove('disabled');
+    }
+
+    if ((data.goldHolder||'').toLowerCase() == sessionStorage.getItem('address')) {
+        document.getElementById('payFeeBtnToggler').classList.remove('disabled');
+    }
+
+
 }
 
 async function setFees() {
@@ -75,6 +85,10 @@ async function setFees() {
     } finally {
         document.getElementById('spinnerSet').classList.add('visually-hidden');
         document.getElementById('setFeesBtn').classList.remove('disabled');
+
+        // hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('setFeesMod'));
+        modal.hide();
     }
 }
 
@@ -106,6 +120,10 @@ async function payFees() {
     } finally {
         document.getElementById('spinnerPay').classList.add('visually-hidden');
         document.getElementById('payFeesBtn').classList.remove('disabled');
+
+        // hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('payFeesMod'));
+        modal.hide();
     }
 }
 
