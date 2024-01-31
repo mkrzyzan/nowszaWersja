@@ -12,7 +12,7 @@ export async function onRequest(context) {
     }
 
     const data = {
-        '0x58a67411665ba2831ca946058f948c1b0d732cac': {
+        '0xED193981c07b538E9f79c5f6dD527c36CfB330ed': {
             location: 'Bangkok',
             locationSymbol: 'BKK'
         },

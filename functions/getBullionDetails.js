@@ -60,7 +60,7 @@ export async function onRequest(context) {
         "method": "eth_call",
         "params": [
             {
-            "to": "0x58A67411665Ba2831CA946058f948C1B0D732Cac",
+            "to": "0xED193981c07b538E9f79c5f6dD527c36CfB330ed",
             "data": "0xebdac090" + BigInt(respData.tokenId).toString(16).padStart(64, '0')
             }
         ]
