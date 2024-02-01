@@ -41,17 +41,20 @@ async function connectButtonFn() {
 function fillVaultOptions(vaultMappingsJson) {
     const vaultSelector = document.getElementById('goldVaultSelector');
     vaultSelector.innerHTML = '';
+    let option;
     for (const vault in vaultMappingsJson) {
-        const option = document.createElement('option');
+        option = document.createElement('option');
         option.value = vault;
         option.innerHTML = `${vaultMappingsJson[vault].locationSymbol}`;
         vaultSelector.appendChild(option);
     }
 
-    const vault = sessionStorage.getItem('vault');
-    if (vault) {
-        vaultSelector.value = vault;
+    let vault = sessionStorage.getItem('vault');
+    if (!vault) {
+        sessionStorage.setItem('vault', option.value);
+        vault = option.value;
     }
+    vaultSelector.value = vault;
 }
 
 function vaultSelected(e) {
