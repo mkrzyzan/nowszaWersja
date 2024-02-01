@@ -8,7 +8,7 @@ async function loadData() {
 
     const currentPage = parseInt(q.get('page')) || 0;
 
-    const url = `${apiUrl}/getKeepers?page=${currentPage}`;
+    const url = `${apiUrl}/getKeepers?page=${currentPage}&vaultAddress=${sessionStorage.getItem('vault')}`;
     const resp = await fetch(url);
     const data = await resp.json();
     document.getElementById('goldKeepersTableBody').innerHTML = '';
