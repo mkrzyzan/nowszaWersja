@@ -44,7 +44,7 @@ function fillVaultOptions(vaultMappingsJson) {
     for (const vault in vaultMappingsJson) {
         const option = document.createElement('option');
         option.value = vault;
-        option.innerHTML = `${vaultMappingsJson[vault].locationSymbol} (${shortenAddress(vault)})`;
+        option.innerHTML = `${vaultMappingsJson[vault].locationSymbol}`;
         vaultSelector.appendChild(option);
     }
 
