@@ -47,12 +47,18 @@ async function initialize() {
 
     // emable button if goldkeeper is the user
     if (data.goldKeeper.toLowerCase() == sessionStorage.getItem('address')) {
-        document.getElementById('setFeeBtnToggler').classList.remove('disabled');
-        document.getElementById('collectFeeBtn').classList.remove('disabled');
+        if (data.state == 2) {
+            document.getElementById('setFeeBtnToggler').classList.remove('disabled');
+        }
+        if (data.state == 1) {
+            document.getElementById('collectFeeBtn').classList.remove('disabled');
+        }
     }
 
     if ((data.goldHolder||'').toLowerCase() == sessionStorage.getItem('address')) {
-        document.getElementById('payFeeBtnToggler').classList.remove('disabled');
+        if (data.state == 0) {
+            document.getElementById('payFeeBtnToggler').classList.remove('disabled');
+        }
     }
 
 

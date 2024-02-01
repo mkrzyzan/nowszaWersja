@@ -60,7 +60,7 @@ export async function onRequest(context) {
         "method": "eth_call",
         "params": [
             {
-            "to": "0xED193981c07b538E9f79c5f6dD527c36CfB330ed",
+            "to": respData.contract,
             "data": "0xebdac090" + BigInt(respData.tokenId).toString(16).padStart(64, '0')
             }
         ]
@@ -72,7 +72,8 @@ export async function onRequest(context) {
     // console.log(feesJson);
     const fees = '0x' + feesJson.result.slice(2).slice(64*1, 64*(1+1));
     const dueDate = '0x' + feesJson.result.slice(2).slice(64*3, 64*(1+3));
-    // console.log(fees, dueDate);
+    const state = '0x' + feesJson.result.slice(2).slice(64*4, 64*(1+4));
+    // console.log(fees, dueDate, state);
 
     
     const key = `${respData.contract.toLowerCase()}-${respData.tokenId}`;
@@ -91,6 +92,7 @@ export async function onRequest(context) {
         valueUSD: parseFloat(descData[0]) * (parseFloat(descData[1])/100) * xauUsdPrice * 0.035274,
         timeToDepositPayment: dueDate,
         fees: fees,
+        state: Number(state),
     }
 
     return new Response(JSON.stringify(data), {headers});
