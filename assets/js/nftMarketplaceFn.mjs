@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', loadNulls);
 document.addEventListener('DOMContentLoaded', loadNotNulls);
 
+
 let vaultMappingsJson = {};
 
 async function loadNotNulls() {
@@ -19,7 +20,7 @@ async function loadData(isNull, containerId, paginationId) {
 
     const currentPage = parseInt(q.get(containerId + 'page')) || 0;
 
-    const url = `${apiUrl}/getNftExtra?isOwnerNull=${isNull}&page=${currentPage}`;
+    const url = `${apiUrl}/getNftExtra?isOwnerNull=${isNull}&page=${currentPage}&vaultAddress=${sessionStorage.getItem('vault')}`;
     const resp = await fetch(url);
     const data = await resp.json();
     data.nft.forEach(bar => {
@@ -66,4 +67,5 @@ function addGoldBarToRow(bar) {
 
     return goldBar;
 }
+
 

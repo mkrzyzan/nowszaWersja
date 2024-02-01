@@ -14,15 +14,11 @@ export async function onRequest(context) {
     const data = {
         '0xed193981c07b538e9f79c5f6dd527c36cfb330ed': {
             location: 'Bangkok',
-            locationSymbol: 'BKK'
+            locationSymbol: 'BKKv2'
         },
-        '0x58a67411665ba2831ca946058f948c1b0d732cad': {
-            location: 'Singapore',
-            locationSymbol: 'SGP'
-        },
-        '0x58a67411665ba2831ca946058f948c1b0d732cae': {
-            location: 'Hong Kong',
-            locationSymbol: 'HKG'
+        '0x58a67411665ba2831ca946058f948c1b0d732cac': {
+            location: 'Bangkok (old)',
+            locationSymbol: 'BKKv1'
         },
     }
 

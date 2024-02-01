@@ -16,14 +16,16 @@ export async function onRequest(context) {
     const urlParams = new URLSearchParams(params);
 
     // get all the tokens (with history)
-    const hist = await context.env.MINT_CACHE.get('history');
+    const historyKey = `${urlParams.get('vaultAddress')}-history`;
+    // console.log(historyKey);
+    const hist = await context.env.MINT_CACHE.get(historyKey);
     let cachedHistory = JSON.parse(hist || '{"timestamp":0}')
     if (cachedHistory.timestamp + 10*60*1000 < Date.now()) {
         const origin = new URL(context.request.url).origin;
-        const tokens = await fetch(`${origin}/getAllHistory`, {method: 'GET', headers: {accept: 'application/json'}});
+        const tokens = await fetch(`${origin}/getAllHistory?vaultAddress=${urlParams.get('vaultAddress')}`, {method: 'GET', headers: {accept: 'application/json'}});
         const tokensJson = await tokens.json();
         const historyToCache = {timestamp: Date.now(), tokensJson};
-        await context.env.MINT_CACHE.put('history', JSON.stringify(historyToCache));
+        await context.env.MINT_CACHE.put(historyKey, JSON.stringify(historyToCache));
         cachedHistory = historyToCache;
     }
 

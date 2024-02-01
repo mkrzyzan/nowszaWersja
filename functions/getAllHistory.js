@@ -10,8 +10,8 @@ export async function onRequest(context) {
         return new Response('OK', {headers});
     }
 
-    // const params = context.request.url.split('?').pop();
-    // const urlParams = new URLSearchParams(params);
+    const params = context.request.url.split('?').pop();
+    const urlParams = new URLSearchParams(params);
 
     const requestBody = {
         "id": 1,
@@ -20,7 +20,7 @@ export async function onRequest(context) {
         "params": [
             {
             "address": [
-                "0xED193981c07b538E9f79c5f6dD527c36CfB330ed"
+                urlParams.get('vaultAddress')
             ],
             "fromBlock": "earliest",
             "toBlock": "latest",

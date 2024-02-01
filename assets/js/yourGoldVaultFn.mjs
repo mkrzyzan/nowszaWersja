@@ -10,7 +10,7 @@ async function loadData() {
 
     const currentPage = parseInt(q.get('page')) || 0;
 
-    const url = `${apiUrl}/getNftExtra?owner=${sessionStorage.getItem('address')}&page=${currentPage}`;
+    const url = `${apiUrl}/getNftExtra?owner=${sessionStorage.getItem('address')}&page=${currentPage}&vaultAddress=${sessionStorage.getItem('vault')}`;
     const resp = await fetch(url);
     const data = await resp.json();
     data.nft.forEach(bar => {
