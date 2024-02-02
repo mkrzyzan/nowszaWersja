@@ -1,3 +1,6 @@
+import { getStructurePart } from "./utils.js"
+
+
 export async function onRequest(context) {
     // console.log(context.request);
 
@@ -69,11 +72,9 @@ export async function onRequest(context) {
     const feesUrl = `https://eth-sepolia.g.alchemy.com/v2/${api}`;
     const feesResp = await fetch(feesUrl, feesOptions);
     const feesJson = await feesResp.json();
-    // console.log(feesJson);
-    const fees = '0x' + feesJson.result.slice(2).slice(64*1, 64*(1+1));
-    const dueDate = '0x' + feesJson.result.slice(2).slice(64*3, 64*(1+3));
-    const state = '0x' + feesJson.result.slice(2).slice(64*4, 64*(1+4));
-    // console.log(fees, dueDate, state);
+    const fees = getStructurePart(feesJson.result, 1);
+    const dueDate = getStructurePart(feesJson.result, 3);
+    const state = getStructurePart(feesJson.result, 4);
 
     
     const key = `${respData.contract.toLowerCase()}-${respData.tokenId}`;
