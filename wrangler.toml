@@ -1,7 +1,0 @@
-[[r2_buckets]]
-binding = 'MY_BUCKET'
-bucket_name = 'pictures'
-
-[[kv_namespaces]]
-binding = "MINT_CACHE"
-id = "991fd2b3203b49cc9390a9480376bac4"
