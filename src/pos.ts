@@ -29,7 +29,7 @@ export class ProofOfStake {
     const currentStake = this.stakes.get(address) || 0;
     
     if (amount > currentStake) {
-      throw new Error('Insufficient stake to remove');
+      throw new Error(`Insufficient stake: attempting to remove ${amount} but only ${currentStake} available`);
     }
 
     const newStake = currentStake - amount;
@@ -85,8 +85,14 @@ export class ProofOfStake {
 
     const totalStake = validators.reduce((sum, stake) => sum + stake.amount, 0);
     
-    // Convert DRAND randomness to a number between 0 and totalStake
-    const randomValue = parseInt(randomness.substring(0, 16), 16) % totalStake;
+    // Convert DRAND randomness to a number using the full hex string for better distribution
+    // Take first 16 hex characters to get a 64-bit number, then use BigInt for precision
+    const hexValue = randomness.substring(0, 16);
+    const randomBigInt = BigInt('0x' + hexValue);
+    const totalStakeBigInt = BigInt(totalStake);
+    
+    // Scale the random value proportionally to avoid modulo bias
+    const randomValue = Number((randomBigInt * totalStakeBigInt) / BigInt('0xFFFFFFFFFFFFFFFF'));
     
     let cumulativeStake = 0;
     for (const validator of validators) {

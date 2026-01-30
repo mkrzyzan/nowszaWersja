@@ -39,7 +39,7 @@ describe('ProofOfStake', () => {
   test('should throw error when removing more stake than available', () => {
     pos.addStake('alice', 100);
     
-    expect(() => pos.removeStake('alice', 200)).toThrow('Insufficient stake');
+    expect(() => pos.removeStake('alice', 200)).toThrow(/Insufficient stake/);
   });
 
   test('should throw error for negative stake', () => {
