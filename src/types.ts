@@ -19,7 +19,8 @@ export interface Transaction {
   to: string;
   amount: number;
   timestamp: number;
-  signature?: string;
+  signature: string;
+  publicKey: string;  // Public key of the sender for signature verification
 }
 
 export interface Stake {

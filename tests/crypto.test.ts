@@ -40,22 +40,80 @@ describe('CryptoUtils', () => {
     expect(CryptoUtils.verifyHashDifficulty(hardHash, 1)).toBe(false);
   });
 
-  test('should generate signature', () => {
-    const data = 'test data';
-    const privateKey = 'private-key';
+  test('should generate ECDSA key pair', () => {
+    const keyPair = CryptoUtils.generateKeyPair();
     
-    const sig1 = CryptoUtils.sign(data, privateKey);
-    const sig2 = CryptoUtils.sign(data, privateKey);
-    
-    expect(sig1).toBe(sig2); // Same data and key should produce same signature
-    expect(sig1).toHaveLength(64);
+    expect(keyPair.privateKey).toBeDefined();
+    expect(keyPair.publicKey).toBeDefined();
+    expect(keyPair.privateKey).not.toBe(keyPair.publicKey);
+    expect(typeof keyPair.privateKey).toBe('string');
+    expect(typeof keyPair.publicKey).toBe('string');
   });
 
-  test('should generate different signatures for different private keys', () => {
-    const data = 'test data';
-    const sig1 = CryptoUtils.sign(data, 'key1');
-    const sig2 = CryptoUtils.sign(data, 'key2');
+  test('should generate different key pairs', () => {
+    const keyPair1 = CryptoUtils.generateKeyPair();
+    const keyPair2 = CryptoUtils.generateKeyPair();
     
-    expect(sig1).not.toBe(sig2);
+    expect(keyPair1.privateKey).not.toBe(keyPair2.privateKey);
+    expect(keyPair1.publicKey).not.toBe(keyPair2.publicKey);
+  });
+
+  test('should derive address from public key', () => {
+    const keyPair = CryptoUtils.generateKeyPair();
+    const address = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
+    
+    expect(address).toBeDefined();
+    expect(address).toHaveLength(40); // 20 bytes = 40 hex characters
+    expect(typeof address).toBe('string');
+  });
+
+  test('should derive same address from same public key', () => {
+    const keyPair = CryptoUtils.generateKeyPair();
+    const address1 = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
+    const address2 = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
+    
+    expect(address1).toBe(address2);
+  });
+
+  test('should sign and verify data with ECDSA', () => {
+    const data = 'test data';
+    const keyPair = CryptoUtils.generateKeyPair();
+    
+    const signature = CryptoUtils.sign(data, keyPair.privateKey);
+    const isValid = CryptoUtils.verify(data, signature, keyPair.publicKey);
+    
+    expect(signature).toBeDefined();
+    expect(typeof signature).toBe('string');
+    expect(isValid).toBe(true);
+  });
+
+  test('should reject signature with wrong public key', () => {
+    const data = 'test data';
+    const keyPair1 = CryptoUtils.generateKeyPair();
+    const keyPair2 = CryptoUtils.generateKeyPair();
+    
+    const signature = CryptoUtils.sign(data, keyPair1.privateKey);
+    const isValid = CryptoUtils.verify(data, signature, keyPair2.publicKey);
+    
+    expect(isValid).toBe(false);
+  });
+
+  test('should reject signature for tampered data', () => {
+    const data = 'test data';
+    const keyPair = CryptoUtils.generateKeyPair();
+    
+    const signature = CryptoUtils.sign(data, keyPair.privateKey);
+    const isValid = CryptoUtils.verify('tampered data', signature, keyPair.publicKey);
+    
+    expect(isValid).toBe(false);
+  });
+
+  test('should reject invalid signature format', () => {
+    const data = 'test data';
+    const keyPair = CryptoUtils.generateKeyPair();
+    
+    const isValid = CryptoUtils.verify(data, 'invalid-signature', keyPair.publicKey);
+    
+    expect(isValid).toBe(false);
   });
 });

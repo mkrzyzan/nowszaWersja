@@ -6,7 +6,7 @@ import { Blockchain } from './blockchain';
 import { ProofOfStake } from './pos';
 import { DrandClient } from './drand';
 import { GossipProtocol } from './gossip';
-import { CryptoUtils } from './crypto';
+import { CryptoUtils, type KeyPair } from './crypto';
 import type { Transaction, NetworkMessage, Block, DrandBeacon } from './types';
 
 export class Node {
@@ -16,13 +16,15 @@ export class Node {
   private gossip: GossipProtocol;
   private nodeId: string;
   private address: string;
+  private keyPair: KeyPair;
   private isRunning: boolean = false;
   private blockInterval: number = 5 * 60 * 1000; // 5 minutes in milliseconds
   private blockTimer?: Timer;
 
   constructor(port: number = 3000) {
     this.nodeId = CryptoUtils.generateNodeId();
-    this.address = this.nodeId.substring(0, 16); // Use first 16 chars as address
+    this.keyPair = CryptoUtils.generateKeyPair();
+    this.address = CryptoUtils.getAddressFromPublicKey(this.keyPair.publicKey);
     this.blockchain = new Blockchain();
     this.pos = new ProofOfStake();
     this.drand = new DrandClient();
@@ -45,7 +47,11 @@ export class Node {
 
     this.gossip.on('TRANSACTION', (message: NetworkMessage) => {
       const transaction = message.payload as Transaction;
-      this.blockchain.addTransaction(transaction);
+      try {
+        this.blockchain.addTransaction(transaction);
+      } catch (error) {
+        console.error('Rejected invalid transaction:', error);
+      }
     });
 
     this.gossip.on('STAKE_UPDATE', (message: NetworkMessage) => {
@@ -186,12 +192,21 @@ export class Node {
    * Add a transaction
    */
   addTransaction(from: string, to: string, amount: number): void {
+    const timestamp = Date.now();
+    const transactionData = CryptoUtils.getTransactionData(from, to, amount, timestamp);
+    
+    // Sign the transaction using the node's private key
+    const signature = CryptoUtils.sign(transactionData, this.keyPair.privateKey);
+    
     const transaction: Transaction = {
       from,
       to,
       amount,
-      timestamp: Date.now()
+      timestamp,
+      signature,
+      publicKey: this.keyPair.publicKey
     };
+    
     this.blockchain.addTransaction(transaction);
     
     // Broadcast transaction

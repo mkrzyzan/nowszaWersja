@@ -4,6 +4,7 @@
 
 import { describe, test, expect, beforeEach } from 'bun:test';
 import { Blockchain } from '../src/blockchain';
+import { CryptoUtils } from '../src/crypto';
 import type { Transaction } from '../src/types';
 
 describe('Blockchain', () => {
@@ -21,8 +22,14 @@ describe('Blockchain', () => {
   });
 
   test('should add a new block', () => {
+    const keyPair = CryptoUtils.generateKeyPair();
+    const from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
+    const timestamp = Date.now();
+    const transactionData = CryptoUtils.getTransactionData(from, 'bob', 100, timestamp);
+    const signature = CryptoUtils.sign(transactionData, keyPair.privateKey);
+    
     const transactions: Transaction[] = [
-      { from: 'alice', to: 'bob', amount: 100, timestamp: Date.now() }
+      { from, to: 'bob', amount: 100, timestamp, signature, publicKey: keyPair.publicKey }
     ];
     
     const block = blockchain.addBlock(transactions, 'validator1', 123, 'sig123');
@@ -35,11 +42,19 @@ describe('Blockchain', () => {
   });
 
   test('should add pending transactions', () => {
+    const keyPair = CryptoUtils.generateKeyPair();
+    const from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
+    const timestamp = Date.now();
+    const transactionData = CryptoUtils.getTransactionData(from, 'bob', 50, timestamp);
+    const signature = CryptoUtils.sign(transactionData, keyPair.privateKey);
+    
     const tx: Transaction = {
-      from: 'alice',
+      from,
       to: 'bob',
       amount: 50,
-      timestamp: Date.now()
+      timestamp,
+      signature,
+      publicKey: keyPair.publicKey
     };
 
     blockchain.addTransaction(tx);
@@ -50,11 +65,19 @@ describe('Blockchain', () => {
   });
 
   test('should clear pending transactions', () => {
+    const keyPair = CryptoUtils.generateKeyPair();
+    const from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
+    const timestamp = Date.now();
+    const transactionData = CryptoUtils.getTransactionData(from, 'bob', 50, timestamp);
+    const signature = CryptoUtils.sign(transactionData, keyPair.privateKey);
+    
     const tx: Transaction = {
-      from: 'alice',
+      from,
       to: 'bob',
       amount: 50,
-      timestamp: Date.now()
+      timestamp,
+      signature,
+      publicKey: keyPair.publicKey
     };
 
     blockchain.addTransaction(tx);

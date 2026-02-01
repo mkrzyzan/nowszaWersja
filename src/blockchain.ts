@@ -64,7 +64,51 @@ export class Blockchain {
    * Add a transaction to pending transactions
    */
   addTransaction(transaction: Transaction): void {
+    // Validate transaction signature
+    if (!this.isValidTransaction(transaction)) {
+      throw new Error('Invalid transaction: signature verification failed');
+    }
     this.pendingTransactions.push(transaction);
+  }
+
+  /**
+   * Validate a transaction
+   */
+  isValidTransaction(transaction: Transaction): boolean {
+    // Check if transaction has a signature
+    if (!transaction.signature || transaction.signature.length === 0) {
+      console.error('Transaction missing signature');
+      return false;
+    }
+
+    // Check if transaction has a public key
+    if (!transaction.publicKey || transaction.publicKey.length === 0) {
+      console.error('Transaction missing public key');
+      return false;
+    }
+
+    // Verify that the 'from' address matches the public key
+    const derivedAddress = CryptoUtils.getAddressFromPublicKey(transaction.publicKey);
+    if (derivedAddress !== transaction.from) {
+      console.error('Transaction from address does not match public key');
+      return false;
+    }
+
+    // Verify the signature using the public key
+    const transactionData = CryptoUtils.getTransactionData(
+      transaction.from,
+      transaction.to,
+      transaction.amount,
+      transaction.timestamp
+    );
+    
+    const isValid = CryptoUtils.verify(transactionData, transaction.signature, transaction.publicKey);
+    
+    if (!isValid) {
+      console.error('Invalid transaction signature');
+    }
+    
+    return isValid;
   }
 
   /**
