@@ -64,7 +64,40 @@ export class Blockchain {
    * Add a transaction to pending transactions
    */
   addTransaction(transaction: Transaction): void {
+    // Validate transaction signature
+    if (!this.isValidTransaction(transaction)) {
+      throw new Error('Invalid transaction: signature verification failed');
+    }
     this.pendingTransactions.push(transaction);
+  }
+
+  /**
+   * Validate a transaction
+   */
+  isValidTransaction(transaction: Transaction): boolean {
+    // Check if transaction has a signature
+    if (!transaction.signature || transaction.signature.length === 0) {
+      console.error('Transaction missing signature');
+      return false;
+    }
+
+    // Verify the signature
+    const transactionData = CryptoUtils.getTransactionData(
+      transaction.from,
+      transaction.to,
+      transaction.amount,
+      transaction.timestamp
+    );
+    
+    // For this simple implementation, we use the 'from' address as the private key
+    // In production, you would verify against a public key
+    const isValid = CryptoUtils.verify(transactionData, transaction.signature, transaction.from);
+    
+    if (!isValid) {
+      console.error('Invalid transaction signature');
+    }
+    
+    return isValid;
   }
 
   /**

@@ -35,4 +35,19 @@ export class CryptoUtils {
   static sign(data: string, privateKey: string): string {
     return this.hash(data + privateKey);
   }
+
+  /**
+   * Verify a signature
+   */
+  static verify(data: string, signature: string, privateKey: string): boolean {
+    const expectedSignature = this.sign(data, privateKey);
+    return expectedSignature === signature;
+  }
+
+  /**
+   * Generate transaction data string for signing
+   */
+  static getTransactionData(from: string, to: string, amount: number, timestamp: number): string {
+    return JSON.stringify({ from, to, amount, timestamp });
+  }
 }

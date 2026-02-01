@@ -19,7 +19,7 @@ export interface Transaction {
   to: string;
   amount: number;
   timestamp: number;
-  signature?: string;
+  signature: string;
 }
 
 export interface Stake {

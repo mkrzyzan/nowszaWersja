@@ -45,7 +45,11 @@ export class Node {
 
     this.gossip.on('TRANSACTION', (message: NetworkMessage) => {
       const transaction = message.payload as Transaction;
-      this.blockchain.addTransaction(transaction);
+      try {
+        this.blockchain.addTransaction(transaction);
+      } catch (error) {
+        console.error('Rejected invalid transaction:', error);
+      }
     });
 
     this.gossip.on('STAKE_UPDATE', (message: NetworkMessage) => {
@@ -186,12 +190,20 @@ export class Node {
    * Add a transaction
    */
   addTransaction(from: string, to: string, amount: number): void {
+    const timestamp = Date.now();
+    const transactionData = CryptoUtils.getTransactionData(from, to, amount, timestamp);
+    
+    // Sign the transaction using the from address as private key
+    const signature = CryptoUtils.sign(transactionData, from);
+    
     const transaction: Transaction = {
       from,
       to,
       amount,
-      timestamp: Date.now()
+      timestamp,
+      signature
     };
+    
     this.blockchain.addTransaction(transaction);
     
     // Broadcast transaction
