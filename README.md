@@ -11,11 +11,13 @@ GROSIK is a functional blockchain node that demonstrates core blockchain concept
 ## Features
 
 - **TypeScript Implementation**: Modern, type-safe code running on Bun runtime
+- **Transaction Signatures**: Mandatory cryptographic signatures on all transactions
 - **DRAND Integration**: Uses DRAND public randomness beacon for validator selection
 - **Proof of Stake**: Prevents Sybil attacks by requiring validators to stake tokens
 - **Gossip Protocol**: Simple peer-to-peer communication for block and transaction propagation
 - **5-Minute Block Time**: Aligned with DRAND beacon timestamps for efficient consensus
 - **Cryptographic Sortition**: Fair and verifiable validator selection using DRAND randomness
+- **Free Transaction Rules**: No restrictions on transaction amounts, only signature validation required
 
 ## Architecture
 
@@ -148,7 +150,13 @@ nowszaWersja/
 {
   index: number;           // Block number
   timestamp: number;       // Creation time
-  transactions: [];        // List of transactions
+  transactions: [{         // List of transactions
+    from: string;          // Sender address
+    to: string;            // Recipient address
+    amount: number;        // Amount to transfer
+    timestamp: number;     // Transaction timestamp
+    signature: string;     // Cryptographic signature (required)
+  }];
   previousHash: string;    // Hash of previous block
   hash: string;            // This block's hash
   nonce: number;           // Nonce value
@@ -158,8 +166,37 @@ nowszaWersja/
 }
 ```
 
+### Transaction Validation
+
+All transactions in GROSIK must be signed. The validation process:
+
+1. **Signature Required**: Every transaction must include a valid cryptographic signature
+2. **Data Integrity**: The signature is verified against transaction data (from, to, amount, timestamp)
+3. **Tamper Detection**: Any modification to the transaction after signing causes validation to fail
+4. **Free Rules**: No restrictions on transaction amounts - zero, negative, or any value is accepted if properly signed
+
+Example of creating a signed transaction:
+
+```typescript
+import { CryptoUtils } from './src/crypto';
+
+const timestamp = Date.now();
+const transactionData = CryptoUtils.getTransactionData('alice', 'bob', 100, timestamp);
+const signature = CryptoUtils.sign(transactionData, 'alice'); // Sign with private key
+
+const transaction = {
+  from: 'alice',
+  to: 'bob',
+  amount: 100,
+  timestamp,
+  signature
+};
+```
+
 ### Security Features
 
+- **Transaction Signatures**: All transactions must be cryptographically signed
+- **Signature Verification**: Transactions are validated before being added to the blockchain
 - **Proof of Stake**: Minimum stake requirement prevents spam
 - **DRAND Randomness**: Unpredictable, verifiable validator selection
 - **Chain Validation**: Each block is validated against the previous
@@ -171,7 +208,8 @@ This is a simplified implementation for educational purposes. For production use
 
 - Persistent storage (currently in-memory)
 - Actual network sockets (currently simulated)
-- Transaction signatures and verification
+- ✅ ~~Transaction signatures and verification~~ (Now implemented!)
+- Public/private key infrastructure with proper key management
 - Advanced consensus mechanisms
 - Byzantine fault tolerance
 - Network partition handling
@@ -192,6 +230,8 @@ Tests cover:
 - Validator selection
 - DRAND integration
 - Gossip protocol
+- **Transaction signature validation**
+- **Signature verification and tamper detection**
 
 ## Contributing
 
