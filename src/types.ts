@@ -20,6 +20,7 @@ export interface Transaction {
   amount: number;
   timestamp: number;
   signature: string;
+  publicKey: string;  // Public key of the sender for signature verification
 }
 
 export interface Stake {

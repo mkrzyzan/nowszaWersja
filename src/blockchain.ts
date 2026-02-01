@@ -81,7 +81,20 @@ export class Blockchain {
       return false;
     }
 
-    // Verify the signature
+    // Check if transaction has a public key
+    if (!transaction.publicKey || transaction.publicKey.length === 0) {
+      console.error('Transaction missing public key');
+      return false;
+    }
+
+    // Verify that the 'from' address matches the public key
+    const derivedAddress = CryptoUtils.getAddressFromPublicKey(transaction.publicKey);
+    if (derivedAddress !== transaction.from) {
+      console.error('Transaction from address does not match public key');
+      return false;
+    }
+
+    // Verify the signature using the public key
     const transactionData = CryptoUtils.getTransactionData(
       transaction.from,
       transaction.to,
@@ -89,9 +102,7 @@ export class Blockchain {
       transaction.timestamp
     );
     
-    // For this simple implementation, we use the 'from' address as the private key
-    // In production, you would verify against a public key
-    const isValid = CryptoUtils.verify(transactionData, transaction.signature, transaction.from);
+    const isValid = CryptoUtils.verify(transactionData, transaction.signature, transaction.publicKey);
     
     if (!isValid) {
       console.error('Invalid transaction signature');
