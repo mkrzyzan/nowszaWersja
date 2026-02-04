@@ -415,11 +415,14 @@ export async function runIDA(
   
   // Execute with optional timeout
   if (opts.timeoutMs > 0) {
+    let timeoutId: ReturnType<typeof setTimeout>;
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error(`Execution timeout after ${opts.timeoutMs}ms`)), opts.timeoutMs);
+      timeoutId = setTimeout(() => reject(new Error(`Execution timeout after ${opts.timeoutMs}ms`)), opts.timeoutMs);
     });
     
-    return Promise.race([executeSteps(), timeoutPromise]);
+    return Promise.race([executeSteps(), timeoutPromise]).finally(() => {
+      clearTimeout(timeoutId);
+    });
   }
   
   return executeSteps();

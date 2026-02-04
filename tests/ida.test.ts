@@ -235,7 +235,7 @@ describe('IDA - Instant Declarative Actions', () => {
   
   describe('options and safety', () => {
     test('should respect maxSteps limit', async () => {
-      const steps: Step[] = Array(10).fill({ action: 'set', var: 'x', value: 1 });
+      const steps: Step[] = Array.from({ length: 10 }, () => ({ action: 'set' as const, var: 'x', value: 1 }));
       
       await expect(runIDA(steps, {}, { maxSteps: 5 })).rejects.toThrow('Too many steps');
     });
