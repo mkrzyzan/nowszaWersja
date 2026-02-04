@@ -4,6 +4,9 @@
  * A simple, lightweight mini blockchain node implementation
  */
 
+// Export IDA module
+export { runIDA, type Step, type Vars, type RunnerOptions } from './ida';
+
 import { Node } from './node';
 
 async function main() {
