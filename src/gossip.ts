@@ -15,7 +15,7 @@ import { ping } from '@libp2p/ping';
 import { mdns } from '@libp2p/mdns';
 import { bootstrap } from '@libp2p/bootstrap';
 import type { Message } from '@libp2p/interface';
-import { multiaddr } from '@multiformats/multiaddr';
+import { multiaddr, type Multiaddr } from '@multiformats/multiaddr';
 import type { Peer, NetworkMessage, Block } from './types';
 
 export class GossipProtocol {
@@ -123,7 +123,7 @@ export class GossipProtocol {
     // Store peer info and dial discovered peers
     this.libp2p.addEventListener('peer:discovery', async (evt) => {
       const peerId = evt.detail.id;
-      const discoveredMultiaddrs = evt.detail.multiaddrs;
+      const discoveredMultiaddrs: Multiaddr[] = evt.detail.multiaddrs;
       
       // Don't try to connect to ourselves
       if (this.libp2p && peerId.equals(this.libp2p.peerId)) {
@@ -133,7 +133,7 @@ export class GossipProtocol {
       console.log(`🔍 Peer discovered via mDNS: ${peerId.toString().substring(0, 20)}...`);
       
       // The multiaddrs should have the peer ID appended
-      const completeMultiaddrs = discoveredMultiaddrs.map((ma: any) => {
+      const completeMultiaddrs: Multiaddr[] = discoveredMultiaddrs.map((ma: Multiaddr) => {
         const maStr = ma.toString();
         if (maStr.includes('/p2p/')) {
           return ma;
