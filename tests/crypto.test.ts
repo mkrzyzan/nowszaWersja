@@ -40,8 +40,8 @@ describe('CryptoUtils', () => {
     expect(CryptoUtils.verifyHashDifficulty(hardHash, 1)).toBe(false);
   });
 
-  test('should generate ECDSA key pair', () => {
-    const keyPair = CryptoUtils.generateKeyPair();
+  test('should generate ECDSA key pair', async () => {
+    const keyPair = await CryptoUtils.generateKeyPair();
     
     expect(keyPair.privateKey).toBeDefined();
     expect(keyPair.publicKey).toBeDefined();
@@ -50,16 +50,16 @@ describe('CryptoUtils', () => {
     expect(typeof keyPair.publicKey).toBe('string');
   });
 
-  test('should generate different key pairs', () => {
-    const keyPair1 = CryptoUtils.generateKeyPair();
-    const keyPair2 = CryptoUtils.generateKeyPair();
+  test('should generate different key pairs', async () => {
+    const keyPair1 = await CryptoUtils.generateKeyPair();
+    const keyPair2 = await CryptoUtils.generateKeyPair();
     
     expect(keyPair1.privateKey).not.toBe(keyPair2.privateKey);
     expect(keyPair1.publicKey).not.toBe(keyPair2.publicKey);
   });
 
-  test('should derive address from public key', () => {
-    const keyPair = CryptoUtils.generateKeyPair();
+  test('should derive address from public key', async () => {
+    const keyPair = await CryptoUtils.generateKeyPair();
     const address = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     
     expect(address).toBeDefined();
@@ -67,52 +67,52 @@ describe('CryptoUtils', () => {
     expect(typeof address).toBe('string');
   });
 
-  test('should derive same address from same public key', () => {
-    const keyPair = CryptoUtils.generateKeyPair();
+  test('should derive same address from same public key', async () => {
+    const keyPair = await CryptoUtils.generateKeyPair();
     const address1 = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     const address2 = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     
     expect(address1).toBe(address2);
   });
 
-  test('should sign and verify data with ECDSA', () => {
+  test('should sign and verify data with ECDSA', async () => {
     const data = 'test data';
-    const keyPair = CryptoUtils.generateKeyPair();
+    const keyPair = await CryptoUtils.generateKeyPair();
     
-    const signature = CryptoUtils.sign(data, keyPair.privateKey);
-    const isValid = CryptoUtils.verify(data, signature, keyPair.publicKey);
+    const signature = await CryptoUtils.sign(data, keyPair.privateKey);
+    const isValid = await CryptoUtils.verify(data, signature, keyPair.publicKey);
     
     expect(signature).toBeDefined();
     expect(typeof signature).toBe('string');
     expect(isValid).toBe(true);
   });
 
-  test('should reject signature with wrong public key', () => {
+  test('should reject signature with wrong public key', async () => {
     const data = 'test data';
-    const keyPair1 = CryptoUtils.generateKeyPair();
-    const keyPair2 = CryptoUtils.generateKeyPair();
+    const keyPair1 = await CryptoUtils.generateKeyPair();
+    const keyPair2 = await CryptoUtils.generateKeyPair();
     
-    const signature = CryptoUtils.sign(data, keyPair1.privateKey);
-    const isValid = CryptoUtils.verify(data, signature, keyPair2.publicKey);
+    const signature = await CryptoUtils.sign(data, keyPair1.privateKey);
+    const isValid = await CryptoUtils.verify(data, signature, keyPair2.publicKey);
     
     expect(isValid).toBe(false);
   });
 
-  test('should reject signature for tampered data', () => {
+  test('should reject signature for tampered data', async () => {
     const data = 'test data';
-    const keyPair = CryptoUtils.generateKeyPair();
+    const keyPair = await CryptoUtils.generateKeyPair();
     
-    const signature = CryptoUtils.sign(data, keyPair.privateKey);
-    const isValid = CryptoUtils.verify('tampered data', signature, keyPair.publicKey);
+    const signature = await CryptoUtils.sign(data, keyPair.privateKey);
+    const isValid = await CryptoUtils.verify('tampered data', signature, keyPair.publicKey);
     
     expect(isValid).toBe(false);
   });
 
-  test('should reject invalid signature format', () => {
+  test('should reject invalid signature format', async () => {
     const data = 'test data';
-    const keyPair = CryptoUtils.generateKeyPair();
+    const keyPair = await CryptoUtils.generateKeyPair();
     
-    const isValid = CryptoUtils.verify(data, 'invalid-signature', keyPair.publicKey);
+    const isValid = await CryptoUtils.verify(data, 'invalid-signature', keyPair.publicKey);
     
     expect(isValid).toBe(false);
   });

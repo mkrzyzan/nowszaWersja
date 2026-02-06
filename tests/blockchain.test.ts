@@ -21,12 +21,12 @@ describe('Blockchain', () => {
     expect(genesisBlock.previousHash).toBe('0');
   });
 
-  test('should add a new block', () => {
-    const keyPair = CryptoUtils.generateKeyPair();
+  test('should add a new block', async () => {
+    const keyPair = await CryptoUtils.generateKeyPair();
     const from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     const timestamp = Date.now();
     const transactionData = CryptoUtils.getTransactionData(from, 'bob', 100, timestamp);
-    const signature = CryptoUtils.sign(transactionData, keyPair.privateKey);
+    const signature = await CryptoUtils.sign(transactionData, keyPair.privateKey);
     
     const transactions: Transaction[] = [
       { from, to: 'bob', amount: 100, timestamp, signature, publicKey: keyPair.publicKey }
@@ -41,12 +41,12 @@ describe('Blockchain', () => {
     expect(block.drandRound).toBe(123);
   });
 
-  test('should add pending transactions', () => {
-    const keyPair = CryptoUtils.generateKeyPair();
+  test('should add pending transactions', async () => {
+    const keyPair = await CryptoUtils.generateKeyPair();
     const from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     const timestamp = Date.now();
     const transactionData = CryptoUtils.getTransactionData(from, 'bob', 50, timestamp);
-    const signature = CryptoUtils.sign(transactionData, keyPair.privateKey);
+    const signature = await CryptoUtils.sign(transactionData, keyPair.privateKey);
     
     const tx: Transaction = {
       from,
@@ -57,19 +57,19 @@ describe('Blockchain', () => {
       publicKey: keyPair.publicKey
     };
 
-    blockchain.addTransaction(tx);
+    await blockchain.addTransaction(tx);
     
     const pending = blockchain.getPendingTransactions();
     expect(pending).toHaveLength(1);
     expect(pending[0]).toEqual(tx);
   });
 
-  test('should clear pending transactions', () => {
-    const keyPair = CryptoUtils.generateKeyPair();
+  test('should clear pending transactions', async () => {
+    const keyPair = await CryptoUtils.generateKeyPair();
     const from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     const timestamp = Date.now();
     const transactionData = CryptoUtils.getTransactionData(from, 'bob', 50, timestamp);
-    const signature = CryptoUtils.sign(transactionData, keyPair.privateKey);
+    const signature = await CryptoUtils.sign(transactionData, keyPair.privateKey);
     
     const tx: Transaction = {
       from,
@@ -80,7 +80,7 @@ describe('Blockchain', () => {
       publicKey: keyPair.publicKey
     };
 
-    blockchain.addTransaction(tx);
+    await blockchain.addTransaction(tx);
     expect(blockchain.getPendingTransactions()).toHaveLength(1);
     
     blockchain.clearPendingTransactions();

@@ -14,12 +14,12 @@ describe('Transaction Signature Validation', () => {
     blockchain = new Blockchain();
   });
 
-  test('should accept transaction with valid signature', () => {
-    const keyPair = CryptoUtils.generateKeyPair();
+  test('should accept transaction with valid signature', async () => {
+    const keyPair = await CryptoUtils.generateKeyPair();
     const from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     const timestamp = Date.now();
     const transactionData = CryptoUtils.getTransactionData(from, 'bob', 100, timestamp);
-    const signature = CryptoUtils.sign(transactionData, keyPair.privateKey);
+    const signature = await CryptoUtils.sign(transactionData, keyPair.privateKey);
 
     const tx: Transaction = {
       from,
@@ -30,15 +30,15 @@ describe('Transaction Signature Validation', () => {
       publicKey: keyPair.publicKey
     };
 
-    blockchain.addTransaction(tx);
+    await blockchain.addTransaction(tx);
     const pending = blockchain.getPendingTransactions();
     
     expect(pending).toHaveLength(1);
     expect(pending[0]).toEqual(tx);
   });
 
-  test('should reject transaction with missing signature', () => {
-    const keyPair = CryptoUtils.generateKeyPair();
+  test('should reject transaction with missing signature', async () => {
+    const keyPair = await CryptoUtils.generateKeyPair();
     const from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     
     const tx: Transaction = {
@@ -50,11 +50,11 @@ describe('Transaction Signature Validation', () => {
       publicKey: keyPair.publicKey
     };
 
-    expect(() => blockchain.addTransaction(tx)).toThrow('Invalid transaction: signature verification failed');
+    await expect(blockchain.addTransaction(tx)).rejects.toThrow('Invalid transaction: signature verification failed');
   });
 
-  test('should reject transaction with invalid signature', () => {
-    const keyPair = CryptoUtils.generateKeyPair();
+  test('should reject transaction with invalid signature', async () => {
+    const keyPair = await CryptoUtils.generateKeyPair();
     const from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     const timestamp = Date.now();
     
@@ -67,16 +67,16 @@ describe('Transaction Signature Validation', () => {
       publicKey: keyPair.publicKey
     };
 
-    expect(() => blockchain.addTransaction(tx)).toThrow('Invalid transaction: signature verification failed');
+    await expect(blockchain.addTransaction(tx)).rejects.toThrow('Invalid transaction: signature verification failed');
   });
 
-  test('should reject transaction with signature from wrong key', () => {
-    const keyPair1 = CryptoUtils.generateKeyPair();
-    const keyPair2 = CryptoUtils.generateKeyPair();
+  test('should reject transaction with signature from wrong key', async () => {
+    const keyPair1 = await CryptoUtils.generateKeyPair();
+    const keyPair2 = await CryptoUtils.generateKeyPair();
     const from = CryptoUtils.getAddressFromPublicKey(keyPair1.publicKey);
     const timestamp = Date.now();
     const transactionData = CryptoUtils.getTransactionData(from, 'bob', 100, timestamp);
-    const signature = CryptoUtils.sign(transactionData, keyPair2.privateKey); // Wrong key!
+    const signature = await CryptoUtils.sign(transactionData, keyPair2.privateKey); // Wrong key!
 
     const tx: Transaction = {
       from,
@@ -87,15 +87,15 @@ describe('Transaction Signature Validation', () => {
       publicKey: keyPair1.publicKey
     };
 
-    expect(() => blockchain.addTransaction(tx)).toThrow('Invalid transaction: signature verification failed');
+    await expect(blockchain.addTransaction(tx)).rejects.toThrow('Invalid transaction: signature verification failed');
   });
 
-  test('should reject transaction if amount is tampered after signing', () => {
-    const keyPair = CryptoUtils.generateKeyPair();
+  test('should reject transaction if amount is tampered after signing', async () => {
+    const keyPair = await CryptoUtils.generateKeyPair();
     const from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     const timestamp = Date.now();
     const transactionData = CryptoUtils.getTransactionData(from, 'bob', 100, timestamp);
-    const signature = CryptoUtils.sign(transactionData, keyPair.privateKey);
+    const signature = await CryptoUtils.sign(transactionData, keyPair.privateKey);
 
     const tx: Transaction = {
       from,
@@ -106,15 +106,15 @@ describe('Transaction Signature Validation', () => {
       publicKey: keyPair.publicKey
     };
 
-    expect(() => blockchain.addTransaction(tx)).toThrow('Invalid transaction: signature verification failed');
+    await expect(blockchain.addTransaction(tx)).rejects.toThrow('Invalid transaction: signature verification failed');
   });
 
-  test('should reject transaction if recipient is changed after signing', () => {
-    const keyPair = CryptoUtils.generateKeyPair();
+  test('should reject transaction if recipient is changed after signing', async () => {
+    const keyPair = await CryptoUtils.generateKeyPair();
     const from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     const timestamp = Date.now();
     const transactionData = CryptoUtils.getTransactionData(from, 'bob', 100, timestamp);
-    const signature = CryptoUtils.sign(transactionData, keyPair.privateKey);
+    const signature = await CryptoUtils.sign(transactionData, keyPair.privateKey);
 
     const tx: Transaction = {
       from,
@@ -125,15 +125,15 @@ describe('Transaction Signature Validation', () => {
       publicKey: keyPair.publicKey
     };
 
-    expect(() => blockchain.addTransaction(tx)).toThrow('Invalid transaction: signature verification failed');
+    await expect(blockchain.addTransaction(tx)).rejects.toThrow('Invalid transaction: signature verification failed');
   });
 
-  test('should accept multiple valid transactions', () => {
-    const keyPair1 = CryptoUtils.generateKeyPair();
+  test('should accept multiple valid transactions', async () => {
+    const keyPair1 = await CryptoUtils.generateKeyPair();
     const from1 = CryptoUtils.getAddressFromPublicKey(keyPair1.publicKey);
     const timestamp1 = Date.now();
     const transactionData1 = CryptoUtils.getTransactionData(from1, 'bob', 100, timestamp1);
-    const signature1 = CryptoUtils.sign(transactionData1, keyPair1.privateKey);
+    const signature1 = await CryptoUtils.sign(transactionData1, keyPair1.privateKey);
 
     const tx1: Transaction = {
       from: from1,
@@ -144,11 +144,11 @@ describe('Transaction Signature Validation', () => {
       publicKey: keyPair1.publicKey
     };
 
-    const keyPair2 = CryptoUtils.generateKeyPair();
+    const keyPair2 = await CryptoUtils.generateKeyPair();
     const from2 = CryptoUtils.getAddressFromPublicKey(keyPair2.publicKey);
     const timestamp2 = Date.now() + 1000;
     const transactionData2 = CryptoUtils.getTransactionData(from2, 'charlie', 50, timestamp2);
-    const signature2 = CryptoUtils.sign(transactionData2, keyPair2.privateKey);
+    const signature2 = await CryptoUtils.sign(transactionData2, keyPair2.privateKey);
 
     const tx2: Transaction = {
       from: from2,
@@ -159,8 +159,8 @@ describe('Transaction Signature Validation', () => {
       publicKey: keyPair2.publicKey
     };
 
-    blockchain.addTransaction(tx1);
-    blockchain.addTransaction(tx2);
+    await blockchain.addTransaction(tx1);
+    await blockchain.addTransaction(tx2);
     
     const pending = blockchain.getPendingTransactions();
     expect(pending).toHaveLength(2);
@@ -168,12 +168,12 @@ describe('Transaction Signature Validation', () => {
     expect(pending[1]).toEqual(tx2);
   });
 
-  test('should validate transaction with isValidTransaction method', () => {
-    const keyPair = CryptoUtils.generateKeyPair();
+  test('should validate transaction with isValidTransaction method', async () => {
+    const keyPair = await CryptoUtils.generateKeyPair();
     const from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     const timestamp = Date.now();
     const transactionData = CryptoUtils.getTransactionData(from, 'bob', 100, timestamp);
-    const signature = CryptoUtils.sign(transactionData, keyPair.privateKey);
+    const signature = await CryptoUtils.sign(transactionData, keyPair.privateKey);
 
     const validTx: Transaction = {
       from,
@@ -193,17 +193,17 @@ describe('Transaction Signature Validation', () => {
       publicKey: keyPair.publicKey
     };
 
-    expect(blockchain.isValidTransaction(validTx)).toBe(true);
-    expect(blockchain.isValidTransaction(invalidTx)).toBe(false);
+    expect(await blockchain.isValidTransaction(validTx)).toBe(true);
+    expect(await blockchain.isValidTransaction(invalidTx)).toBe(false);
   });
 
-  test('should accept transactions with any amount (free transaction rules)', () => {
+  test('should accept transactions with any amount (free transaction rules)', async () => {
     // Test zero amount
-    let keyPair = CryptoUtils.generateKeyPair();
+    let keyPair = await CryptoUtils.generateKeyPair();
     let from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     let timestamp = Date.now();
     let transactionData = CryptoUtils.getTransactionData(from, 'bob', 0, timestamp);
-    let signature = CryptoUtils.sign(transactionData, keyPair.privateKey);
+    let signature = await CryptoUtils.sign(transactionData, keyPair.privateKey);
     let tx: Transaction = {
       from,
       to: 'bob',
@@ -212,15 +212,15 @@ describe('Transaction Signature Validation', () => {
       signature,
       publicKey: keyPair.publicKey
     };
-    blockchain.addTransaction(tx);
+    await blockchain.addTransaction(tx);
     expect(blockchain.getPendingTransactions()).toHaveLength(1);
 
     // Test large amount
-    keyPair = CryptoUtils.generateKeyPair();
+    keyPair = await CryptoUtils.generateKeyPair();
     from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     timestamp = Date.now() + 1;
     transactionData = CryptoUtils.getTransactionData(from, 'bob', 1000000, timestamp);
-    signature = CryptoUtils.sign(transactionData, keyPair.privateKey);
+    signature = await CryptoUtils.sign(transactionData, keyPair.privateKey);
     tx = {
       from,
       to: 'bob',
@@ -229,15 +229,15 @@ describe('Transaction Signature Validation', () => {
       signature,
       publicKey: keyPair.publicKey
     };
-    blockchain.addTransaction(tx);
+    await blockchain.addTransaction(tx);
     expect(blockchain.getPendingTransactions()).toHaveLength(2);
 
     // Test negative amount (still accepted if signed)
-    keyPair = CryptoUtils.generateKeyPair();
+    keyPair = await CryptoUtils.generateKeyPair();
     from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
     timestamp = Date.now() + 2;
     transactionData = CryptoUtils.getTransactionData(from, 'bob', -50, timestamp);
-    signature = CryptoUtils.sign(transactionData, keyPair.privateKey);
+    signature = await CryptoUtils.sign(transactionData, keyPair.privateKey);
     tx = {
       from,
       to: 'bob',
@@ -246,16 +246,16 @@ describe('Transaction Signature Validation', () => {
       signature,
       publicKey: keyPair.publicKey
     };
-    blockchain.addTransaction(tx);
+    await blockchain.addTransaction(tx);
     expect(blockchain.getPendingTransactions()).toHaveLength(3);
   });
 
-  test('should reject transaction with mismatched from address and public key', () => {
-    const keyPair = CryptoUtils.generateKeyPair();
+  test('should reject transaction with mismatched from address and public key', async () => {
+    const keyPair = await CryptoUtils.generateKeyPair();
     const wrongAddress = 'wrong-address-that-doesnt-match';
     const timestamp = Date.now();
     const transactionData = CryptoUtils.getTransactionData(wrongAddress, 'bob', 100, timestamp);
-    const signature = CryptoUtils.sign(transactionData, keyPair.privateKey);
+    const signature = await CryptoUtils.sign(transactionData, keyPair.privateKey);
 
     const tx: Transaction = {
       from: wrongAddress,
@@ -266,10 +266,10 @@ describe('Transaction Signature Validation', () => {
       publicKey: keyPair.publicKey
     };
 
-    expect(() => blockchain.addTransaction(tx)).toThrow('Invalid transaction: signature verification failed');
+    await expect(blockchain.addTransaction(tx)).rejects.toThrow('Invalid transaction: signature verification failed');
   });
 
-  test('should reject transaction with missing public key', () => {
+  test('should reject transaction with missing public key', async () => {
     const tx: Transaction = {
       from: 'alice',
       to: 'bob',
@@ -279,34 +279,34 @@ describe('Transaction Signature Validation', () => {
       publicKey: ''
     };
 
-    expect(() => blockchain.addTransaction(tx)).toThrow('Invalid transaction: signature verification failed');
+    await expect(blockchain.addTransaction(tx)).rejects.toThrow('Invalid transaction: signature verification failed');
   });
 });
 
 describe('CryptoUtils Signature Methods', () => {
-  test('should verify correct signature', () => {
+  test('should verify correct signature', async () => {
     const data = 'test data';
-    const keyPair = CryptoUtils.generateKeyPair();
-    const signature = CryptoUtils.sign(data, keyPair.privateKey);
+    const keyPair = await CryptoUtils.generateKeyPair();
+    const signature = await CryptoUtils.sign(data, keyPair.privateKey);
 
-    expect(CryptoUtils.verify(data, signature, keyPair.publicKey)).toBe(true);
+    expect(await CryptoUtils.verify(data, signature, keyPair.publicKey)).toBe(true);
   });
 
-  test('should reject incorrect signature', () => {
+  test('should reject incorrect signature', async () => {
     const data = 'test data';
-    const keyPair = CryptoUtils.generateKeyPair();
+    const keyPair = await CryptoUtils.generateKeyPair();
     const wrongSignature = 'wrong-signature';
 
-    expect(CryptoUtils.verify(data, wrongSignature, keyPair.publicKey)).toBe(false);
+    expect(await CryptoUtils.verify(data, wrongSignature, keyPair.publicKey)).toBe(false);
   });
 
-  test('should reject signature with wrong key', () => {
+  test('should reject signature with wrong key', async () => {
     const data = 'test data';
-    const keyPair1 = CryptoUtils.generateKeyPair();
-    const keyPair2 = CryptoUtils.generateKeyPair();
-    const signature = CryptoUtils.sign(data, keyPair1.privateKey);
+    const keyPair1 = await CryptoUtils.generateKeyPair();
+    const keyPair2 = await CryptoUtils.generateKeyPair();
+    const signature = await CryptoUtils.sign(data, keyPair1.privateKey);
 
-    expect(CryptoUtils.verify(data, signature, keyPair2.publicKey)).toBe(false);
+    expect(await CryptoUtils.verify(data, signature, keyPair2.publicKey)).toBe(false);
   });
 
   test('should generate consistent transaction data', () => {
