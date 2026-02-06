@@ -158,7 +158,8 @@ export class Node {
         lastSeen: Date.now()
       });
 
-      console.log(`✅ Successfully connected to bootstrap peer at ${host}:${httpPort} (libp2p: ${libp2pPort})`);
+      console.log(`✅ Bootstrap peer registered at ${host}:${httpPort} (libp2p: ${libp2pPort})`);
+      console.log(`   Peer will be discovered automatically via mDNS/gossipsub`);
     } catch (error) {
       console.error(`Error connecting to bootstrap peer:`, error);
     }

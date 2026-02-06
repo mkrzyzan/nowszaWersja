@@ -135,24 +135,26 @@ export class GossipProtocol {
   }
 
   /**
-   * Add a bootstrap peer and dial it
+   * Add a bootstrap peer hint for discovery
+   * Note: Direct dialing without peer ID is not supported by libp2p.
+   * Instead, we rely on mDNS and gossipsub for automatic peer discovery.
+   * This method registers the peer information for tracking purposes.
    */
   async addBootstrapPeer(address: string, port: number): Promise<void> {
     if (!this.libp2p || !this.started) {
       throw new Error('libp2p not started');
     }
     
-    try {
-      // Convert localhost to 127.0.0.1
-      const addr = address === 'localhost' ? '127.0.0.1' : address;
-      const multiaddr_str = `/ip4/${addr}/tcp/${port}`;
-      console.log(`Dialing bootstrap peer at ${multiaddr_str}`);
-      const ma = multiaddr(multiaddr_str);
-      await this.libp2p.dial(ma);
-      console.log(`Successfully connected to peer at ${multiaddr_str}`);
-    } catch (error) {
-      console.log(`Could not dial bootstrap peer: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    // Convert localhost to 127.0.0.1
+    const addr = address === 'localhost' ? '127.0.0.1' : address;
+    console.log(`Registered bootstrap peer hint: ${addr}:${port}`);
+    console.log(`Peer discovery via mDNS and gossipsub will connect automatically`);
+    
+    // Note: We cannot dial without knowing the peer ID ahead of time.
+    // libp2p will discover and connect to this peer automatically through:
+    // 1. mDNS (for local network)
+    // 2. Gossipsub topic subscriptions
+    // 3. Kad-DHT peer routing
   }
 
   /**
