@@ -62,7 +62,7 @@ export class GossipProtocol {
         webSockets()
       ],
       streamMuxers: [mplex(), yamux()],
-      connectionEncryption: [noise()],
+      connectionEncrypters: [noise()],
       peerDiscovery: [
         mdns({
           interval: 1000  // Check for peers every second
@@ -127,7 +127,7 @@ export class GossipProtocol {
     });
 
     // Listen for peer discovery events
-    // Store peer info - libp2p services (gossipsub) will handle connections automatically
+    // Store peer info and dial to establish connection
     this.libp2p.addEventListener('peer:discovery', async (evt) => {
       const peerId = evt.detail.id;
       const discoveredMultiaddrs = evt.detail.multiaddrs;
@@ -149,9 +149,19 @@ export class GossipProtocol {
           multiaddrs: completeMultiaddrs
         });
         console.log(`   ✅ Stored in peer store`);
-        console.log(`   Gossipsub will establish connection automatically when needed`);
       } catch (err) {
         console.log(`   ⚠️  Failed to store: ${err}`);
+      }
+      
+      // Dial the peer to establish connection
+      if (this.libp2p) {
+        try {
+          await this.libp2p.dial(peerId);
+          console.log(`   🔗 Connected to peer`);
+        } catch (err: any) {
+          // Connection errors are common (already connected, dial in progress, etc.)
+          console.log(`   ℹ️  Dial info: ${err.message || err}`);
+        }
       }
     });
 
