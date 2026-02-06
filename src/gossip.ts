@@ -4,7 +4,7 @@
  */
 
 import { createLibp2p, type Libp2p } from 'libp2p';
-import { tcp } from '@libp2p/tcp';
+import { webSockets } from '@libp2p/websockets';
 import { mplex } from '@libp2p/mplex';
 import { yamux } from '@libp2p/yamux';
 import { noise } from '@libp2p/noise';
@@ -48,12 +48,16 @@ export class GossipProtocol {
       return;
     }
 
-    // Create libp2p node
+    // Create libp2p node with WebSocket transport
     this.libp2p = await createLibp2p({
       addresses: {
-        listen: [`/ip4/0.0.0.0/tcp/${this.port}`]
+        listen: [
+          `/ip4/0.0.0.0/tcp/${this.port}/ws`
+        ]
       },
-      transports: [tcp()],
+      transports: [
+        webSockets()
+      ],
       streamMuxers: [mplex(), yamux()],
       connectionEncryption: [noise()],
       peerDiscovery: [
@@ -234,7 +238,7 @@ export class GossipProtocol {
     
     // Convert localhost to 127.0.0.1
     const addr = address === 'localhost' ? '127.0.0.1' : address;
-    const multiaddr_str = `/ip4/${addr}/tcp/${port}`;
+    const multiaddr_str = `/ip4/${addr}/tcp/${port}/ws`;
     
     console.log(`Attempting to connect to bootstrap peer at ${multiaddr_str}`);
     console.log(`Note: Connection will succeed once peer is discovered via mDNS`);
