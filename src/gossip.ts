@@ -121,15 +121,17 @@ export class GossipProtocol {
   }
 
   /**
-   * Add a peer to the network (for compatibility - libp2p handles peer management automatically)
-   * Note: With libp2p, peers discover each other through gossipsub topics and DHT
+   * Add a peer to the network (for compatibility with old API)
+   * Note: With libp2p, peers are discovered automatically through gossipsub and DHT.
+   * This method is kept for compatibility but doesn't perform manual dialing.
+   * Use addBootstrapPeer() for explicit peer connections.
    */
   async addPeer(peer: Peer): Promise<void> {
     this.peers.set(peer.id, peer);
     console.log(`Added peer: ${peer.id} at ${peer.address}:${peer.port}`);
     
-    // libp2p will discover peers automatically through gossipsub and DHT
-    // We don't need to manually dial - just subscribing to the same topics is enough
+    // Peers will be discovered automatically via gossipsub topic subscriptions and DHT
+    // No manual dialing needed here
   }
 
   /**

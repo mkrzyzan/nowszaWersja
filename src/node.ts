@@ -67,12 +67,14 @@ export class Node {
       const { id, address, port } = message.payload;
       // Only add peer if it's not ourselves
       if (id !== this.nodeId) {
-        // Make addPeer async-friendly by using void promise
-        void this.gossip.addPeer({
+        // Add peer asynchronously - errors are logged inside addPeer
+        this.gossip.addPeer({
           id,
           address: address || 'localhost',
           port,
           lastSeen: Date.now()
+        }).catch(err => {
+          console.log(`Error adding peer ${id}: ${err}`);
         });
         
         // Broadcast our own PEER_DISCOVERY so all peers learn about us
@@ -115,7 +117,8 @@ export class Node {
 
   /**
    * Connect to a bootstrap peer using libp2p
-   * Note: The peer address should be the HTTP port, and this method will calculate the libp2p port
+   * @param peerAddress - The HTTP port or host:port of the peer (e.g., "localhost:3000" or "3000")
+   *                      The libp2p port will be calculated as HTTP port + 1000
    */
   async connectToBootstrapPeer(peerAddress: string): Promise<void> {
     try {
