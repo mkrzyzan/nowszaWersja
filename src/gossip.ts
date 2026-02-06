@@ -142,6 +142,7 @@ export class GossipProtocol {
       type: 'PEER_DISCOVERY',
       payload: {
         id: this.nodeId,
+        address: 'localhost',
         port: this.port
       },
       sender: this.nodeId,

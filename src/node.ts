@@ -58,6 +58,19 @@ export class Node {
       const { address, amount } = message.payload;
       this.pos.addStake(address, amount);
     });
+
+    this.gossip.on('PEER_DISCOVERY', (message: NetworkMessage) => {
+      const { id, address, port } = message.payload;
+      // Only add peer if it's not ourselves
+      if (id !== this.nodeId) {
+        this.gossip.addPeer({
+          id,
+          address: address || 'localhost',
+          port,
+          lastSeen: Date.now()
+        });
+      }
+    });
   }
 
   /**
@@ -76,6 +89,62 @@ export class Node {
     } else if (block.index > latestBlock.index + 1) {
       // We're behind, might need to request the chain
       console.log('Received block indicates we are behind. Chain sync needed.');
+    }
+  }
+
+  /**
+   * Connect to a bootstrap peer
+   */
+  async connectToBootstrapPeer(peerAddress: string): Promise<void> {
+    try {
+      console.log(`Attempting to connect to bootstrap peer: ${peerAddress}`);
+      
+      // Parse peer address (format: host:port or just port)
+      let host = 'localhost';
+      let port = 3000;
+      
+      if (peerAddress.includes(':')) {
+        const parts = peerAddress.split(':');
+        host = parts[0];
+        port = parseInt(parts[1]);
+      } else {
+        port = parseInt(peerAddress);
+      }
+
+      // Create PEER_DISCOVERY message
+      const message: NetworkMessage = {
+        type: 'PEER_DISCOVERY',
+        payload: {
+          id: this.nodeId,
+          address: 'localhost',
+          port: this.gossip['port']
+        },
+        sender: this.nodeId,
+        timestamp: Date.now()
+      };
+
+      // Send to bootstrap peer
+      const url = `http://${host}:${port}/gossip`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(message)
+      });
+
+      if (response.ok) {
+        console.log(`✅ Successfully connected to bootstrap peer at ${host}:${port}`);
+        // Also add the bootstrap peer to our peers list
+        this.gossip.addPeer({
+          id: `bootstrap-${host}-${port}`,
+          address: host,
+          port: port,
+          lastSeen: Date.now()
+        });
+      } else {
+        console.error(`Failed to connect to bootstrap peer: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error(`Error connecting to bootstrap peer:`, error);
     }
   }
 
