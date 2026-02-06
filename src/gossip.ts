@@ -11,6 +11,7 @@ import { noise } from '@libp2p/noise';
 import { gossipsub } from '@libp2p/gossipsub';
 import { identify } from '@libp2p/identify';
 import { kadDHT } from '@libp2p/kad-dht';
+import { ping } from '@libp2p/ping';
 import type { Message } from '@libp2p/interface';
 import { multiaddr } from '@multiformats/multiaddr';
 import type { Peer, NetworkMessage, Block } from './types';
@@ -57,7 +58,8 @@ export class GossipProtocol {
           allowPublishToZeroTopicPeers: true
         }),
         identify: identify(),
-        dht: kadDHT()
+        dht: kadDHT(),
+        ping: ping()
       }
     });
 
@@ -122,7 +124,9 @@ export class GossipProtocol {
     // Try to dial the peer using libp2p
     if (this.libp2p && this.started) {
       try {
-        const addr = multiaddr(`/ip4/${peer.address}/tcp/${peer.port}`);
+        // Convert localhost to 127.0.0.1 for libp2p
+        const address = peer.address === 'localhost' ? '127.0.0.1' : peer.address;
+        const addr = multiaddr(`/ip4/${address}/tcp/${peer.port}`);
         await this.libp2p.dial(addr);
       } catch (error) {
         console.log(`Could not dial peer ${peer.id}: ${error instanceof Error ? error.message : String(error)}`);

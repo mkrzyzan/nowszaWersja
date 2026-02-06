@@ -2,15 +2,20 @@
  * Tests for Gossip Protocol implementation
  */
 
-import { describe, test, expect, beforeEach } from 'bun:test';
+import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { GossipProtocol } from '../src/gossip';
 import type { Peer, NetworkMessage } from '../src/types';
 
 describe('GossipProtocol', () => {
   let gossip: GossipProtocol;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     gossip = new GossipProtocol('node1', 3000);
+    await gossip.start();
+  });
+
+  afterEach(async () => {
+    await gossip.stop();
   });
 
   test('should initialize with node ID and port', () => {
@@ -18,7 +23,7 @@ describe('GossipProtocol', () => {
     expect(gossip.getPeerCount()).toBe(0);
   });
 
-  test('should add a peer', () => {
+  test('should add a peer', async () => {
     const peer: Peer = {
       id: 'peer1',
       address: '127.0.0.1',
@@ -26,13 +31,13 @@ describe('GossipProtocol', () => {
       lastSeen: Date.now()
     };
 
-    gossip.addPeer(peer);
+    await gossip.addPeer(peer);
     
     expect(gossip.getPeerCount()).toBe(1);
     expect(gossip.getPeers()).toContainEqual(peer);
   });
 
-  test('should remove a peer', () => {
+  test('should remove a peer', async () => {
     const peer: Peer = {
       id: 'peer1',
       address: '127.0.0.1',
@@ -40,14 +45,14 @@ describe('GossipProtocol', () => {
       lastSeen: Date.now()
     };
 
-    gossip.addPeer(peer);
+    await gossip.addPeer(peer);
     expect(gossip.getPeerCount()).toBe(1);
     
     gossip.removePeer('peer1');
     expect(gossip.getPeerCount()).toBe(0);
   });
 
-  test('should get all peers', () => {
+  test('should get all peers', async () => {
     const peer1: Peer = {
       id: 'peer1',
       address: '127.0.0.1',
@@ -61,8 +66,8 @@ describe('GossipProtocol', () => {
       lastSeen: Date.now()
     };
 
-    gossip.addPeer(peer1);
-    gossip.addPeer(peer2);
+    await gossip.addPeer(peer1);
+    await gossip.addPeer(peer2);
     
     const peers = gossip.getPeers();
     expect(peers).toHaveLength(2);
@@ -110,7 +115,7 @@ describe('GossipProtocol', () => {
     expect(callCount).toBe(1); // Should only be called once
   });
 
-  test('should broadcast message', () => {
+  test('should broadcast message', async () => {
     const message: NetworkMessage = {
       type: 'BLOCK',
       payload: {},
@@ -119,7 +124,7 @@ describe('GossipProtocol', () => {
     };
 
     // Add a peer
-    gossip.addPeer({
+    await gossip.addPeer({
       id: 'peer1',
       address: '127.0.0.1',
       port: 3001,
@@ -130,7 +135,7 @@ describe('GossipProtocol', () => {
     expect(() => gossip.broadcast(message)).not.toThrow();
   });
 
-  test('should update peer last seen', () => {
+  test('should update peer last seen', async () => {
     const peer: Peer = {
       id: 'peer1',
       address: '127.0.0.1',
@@ -138,7 +143,7 @@ describe('GossipProtocol', () => {
       lastSeen: Date.now() - 10000
     };
 
-    gossip.addPeer(peer);
+    await gossip.addPeer(peer);
     const oldLastSeen = gossip.getPeers()[0].lastSeen;
     
     // Update last seen
@@ -148,7 +153,7 @@ describe('GossipProtocol', () => {
     expect(newLastSeen).toBeGreaterThanOrEqual(oldLastSeen);
   });
 
-  test('should cleanup stale peers', () => {
+  test('should cleanup stale peers', async () => {
     const stalePeer: Peer = {
       id: 'stale',
       address: '127.0.0.1',
@@ -162,8 +167,8 @@ describe('GossipProtocol', () => {
       lastSeen: Date.now()
     };
 
-    gossip.addPeer(stalePeer);
-    gossip.addPeer(activePeer);
+    await gossip.addPeer(stalePeer);
+    await gossip.addPeer(activePeer);
     
     expect(gossip.getPeerCount()).toBe(2);
     
@@ -195,11 +200,11 @@ describe('GossipProtocol', () => {
     expect(() => gossip.discoverPeers()).not.toThrow();
   });
 
-  test('should include address in peer discovery message', () => {
+  test('should include address in peer discovery message', async () => {
     let discoveryMessage: NetworkMessage | null = null;
     
     // Add a peer so broadcast actually sends
-    gossip.addPeer({
+    await gossip.addPeer({
       id: 'peer1',
       address: '127.0.0.1',
       port: 3001,

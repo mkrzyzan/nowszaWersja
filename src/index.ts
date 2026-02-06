@@ -72,15 +72,15 @@ async function main() {
   }, 30000);
 
   // Handle shutdown gracefully
-  process.on('SIGINT', () => {
+  process.on('SIGINT', async () => {
     console.log('\nShutting down gracefully...');
-    node.stop();
+    await node.stop();
     process.exit(0);
   });
 
-  process.on('SIGTERM', () => {
+  process.on('SIGTERM', async () => {
     console.log('\nShutting down gracefully...');
-    node.stop();
+    await node.stop();
     process.exit(0);
   });
 }

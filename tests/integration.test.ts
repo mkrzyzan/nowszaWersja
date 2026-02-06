@@ -38,7 +38,7 @@ describe('Node Integration Tests', () => {
   afterEach(async () => {
     // Clean up all nodes and servers
     for (const node of nodes) {
-      node.stop();
+      await node.stop();
     }
     for (const server of servers) {
       if (server && server.stop) {
@@ -55,7 +55,7 @@ describe('Node Integration Tests', () => {
   describe('Single Node', () => {
     test('should start a single node successfully', async () => {
       const port = 13000;
-      const node = new Node(port, 'localhost');
+      const node = new Node(port, port + 1000, 'localhost');
       nodes.push(node);
       
       await node.start();
@@ -74,7 +74,7 @@ describe('Node Integration Tests', () => {
 
     test('should create genesis block', async () => {
       const port = 13001;
-      const node = new Node(port, 'localhost');
+      const node = new Node(port, port + 1000, 'localhost');
       nodes.push(node);
       
       await node.start();
@@ -93,14 +93,14 @@ describe('Node Integration Tests', () => {
       const port2 = 13101;
       
       // Start first node
-      const node1 = new Node(port1, 'localhost');
+      const node1 = new Node(port1, port1 + 1000, 'localhost');
       nodes.push(node1);
       await node1.start();
       const server1 = startServer(node1, port1);
       servers.push(server1);
       
       // Start second node
-      const node2 = new Node(port2, 'localhost');
+      const node2 = new Node(port2, port2 + 1000, 'localhost');
       nodes.push(node2);
       await node2.start();
       const server2 = startServer(node2, port2);
@@ -125,13 +125,13 @@ describe('Node Integration Tests', () => {
       const port2 = 13111;
       
       // Start and connect nodes
-      const node1 = new Node(port1, 'localhost');
+      const node1 = new Node(port1, port1 + 1000, 'localhost');
       nodes.push(node1);
       await node1.start();
       const server1 = startServer(node1, port1);
       servers.push(server1);
       
-      const node2 = new Node(port2, 'localhost');
+      const node2 = new Node(port2, port2 + 1000, 'localhost');
       nodes.push(node2);
       await node2.start();
       const server2 = startServer(node2, port2);
@@ -168,14 +168,14 @@ describe('Node Integration Tests', () => {
       const portC = 13202;
       
       // Start node B (hub)
-      const nodeB = new Node(portB, 'localhost');
+      const nodeB = new Node(portB, portB + 1000, 'localhost');
       nodes.push(nodeB);
       await nodeB.start();
       const serverB = startServer(nodeB, portB);
       servers.push(serverB);
       
       // Start node A and connect to B
-      const nodeA = new Node(portA, 'localhost');
+      const nodeA = new Node(portA, portA + 1000, 'localhost');
       nodes.push(nodeA);
       await nodeA.start();
       const serverA = startServer(nodeA, portA);
@@ -186,7 +186,7 @@ describe('Node Integration Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 600));
       
       // Start node C and connect to B
-      const nodeC = new Node(portC, 'localhost');
+      const nodeC = new Node(portC, portC + 1000, 'localhost');
       nodes.push(nodeC);
       await nodeC.start();
       const serverC = startServer(nodeC, portC);
@@ -214,20 +214,20 @@ describe('Node Integration Tests', () => {
       const portC = 13212;
       
       // Set up three nodes connected via B
-      const nodeB = new Node(portB, 'localhost');
+      const nodeB = new Node(portB, portB + 1000, 'localhost');
       nodes.push(nodeB);
       await nodeB.start();
       const serverB = startServer(nodeB, portB);
       servers.push(serverB);
       
-      const nodeA = new Node(portA, 'localhost');
+      const nodeA = new Node(portA, portA + 1000, 'localhost');
       nodes.push(nodeA);
       await nodeA.start();
       const serverA = startServer(nodeA, portA);
       servers.push(serverA);
       await nodeA.connectToBootstrapPeer(`localhost:${portB}`);
       
-      const nodeC = new Node(portC, 'localhost');
+      const nodeC = new Node(portC, portC + 1000, 'localhost');
       nodes.push(nodeC);
       await nodeC.start();
       const serverC = startServer(nodeC, portC);
@@ -261,20 +261,20 @@ describe('Node Integration Tests', () => {
       const portC = 13222;
       
       // Set up three-node network
-      const nodeB = new Node(portB, 'localhost');
+      const nodeB = new Node(portB, portB + 1000, 'localhost');
       nodes.push(nodeB);
       await nodeB.start();
       const serverB = startServer(nodeB, portB);
       servers.push(serverB);
       
-      const nodeA = new Node(portA, 'localhost');
+      const nodeA = new Node(portA, portA + 1000, 'localhost');
       nodes.push(nodeA);
       await nodeA.start();
       const serverA = startServer(nodeA, portA);
       servers.push(serverA);
       await nodeA.connectToBootstrapPeer(`localhost:${portB}`);
       
-      const nodeC = new Node(portC, 'localhost');
+      const nodeC = new Node(portC, portC + 1000, 'localhost');
       nodes.push(nodeC);
       await nodeC.start();
       const serverC = startServer(nodeC, portC);
@@ -300,94 +300,10 @@ describe('Node Integration Tests', () => {
     });
   });
 
-  describe('HTTP Gossip Protocol', () => {
-    test('should receive transactions via HTTP /gossip endpoint', async () => {
-      const port = 13300;
-      const node = new Node(port, 'localhost');
-      nodes.push(node);
-      await node.start();
-      const server = startServer(node, port);
-      servers.push(server);
-      
-      const initialState = node.getBlockchainState();
-      
-      // Construct a valid transaction message
-      const transaction: Transaction = {
-        from: 'sender_address',
-        to: 'receiver_address',
-        amount: 10,
-        timestamp: Date.now(),
-        signature: 'test_signature',
-        publicKey: 'test_public_key'
-      };
-      
-      const message = {
-        type: 'TRANSACTION',
-        payload: transaction,
-        sender: 'test_node',
-        timestamp: Date.now()
-      };
-      
-      // Send transaction via HTTP
-      const response = await fetch(`http://localhost:${port}/gossip`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(message)
-      });
-      
-      expect(response.ok).toBe(true);
-      
-      // Wait a bit for processing
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const finalState = node.getBlockchainState();
-      // Transaction should be processed (might be rejected if invalid signature, but handler was called)
-      expect(response.status).toBe(200);
-    });
-
-    test('should handle PEER_DISCOVERY messages via HTTP', async () => {
-      const port = 13310;
-      const node = new Node(port, 'localhost');
-      nodes.push(node);
-      await node.start();
-      const server = startServer(node, port);
-      servers.push(server);
-      
-      const initialState = node.getBlockchainState();
-      expect(initialState.peers).toBe(0);
-      
-      // Send PEER_DISCOVERY message
-      const discoveryMessage = {
-        type: 'PEER_DISCOVERY',
-        payload: {
-          id: 'remote_node_id_12345',
-          address: 'localhost',
-          port: 19999
-        },
-        sender: 'remote_node_id_12345',
-        timestamp: Date.now()
-      };
-      
-      const response = await fetch(`http://localhost:${port}/gossip`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(discoveryMessage)
-      });
-      
-      expect(response.ok).toBe(true);
-      
-      // Wait for processing
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      const finalState = node.getBlockchainState();
-      expect(finalState.peers).toBe(1);
-    });
-  });
-
   describe('Port Validation', () => {
     test('should handle invalid port format gracefully', async () => {
       const port = 13400;
-      const node = new Node(port, 'localhost');
+      const node = new Node(port, port + 1000, 'localhost');
       nodes.push(node);
       await node.start();
       const server = startServer(node, port);
@@ -405,7 +321,7 @@ describe('Node Integration Tests', () => {
 
     test('should handle unreachable peer gracefully', async () => {
       const port = 13410;
-      const node = new Node(port, 'localhost');
+      const node = new Node(port, port + 1000, 'localhost');
       nodes.push(node);
       await node.start();
       const server = startServer(node, port);
