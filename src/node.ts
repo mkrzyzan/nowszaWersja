@@ -123,9 +123,10 @@ export class Node {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(message)
       });
+      console.log(`Sent PEER_DISCOVERY response to ${host}:${port}`);
     } catch (error) {
-      // Silently fail - peer might be unreachable
-      console.debug(`Could not send discovery to ${host}:${port}`);
+      // Peer might not be ready yet or unreachable
+      console.log(`Could not send discovery to ${host}:${port}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

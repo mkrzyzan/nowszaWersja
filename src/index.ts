@@ -48,6 +48,9 @@ async function main() {
   // Start the node
   await node.start();
 
+  // Start Bun HTTP/WebSocket server first so we can receive PEER_DISCOVERY responses
+  startServer(node);
+
   // Connect to bootstrap peers if provided
   if (bootstrapPeers.length > 0) {
     console.log(`\n🔗 Connecting to ${bootstrapPeers.length} bootstrap peer(s)...`);
@@ -55,9 +58,6 @@ async function main() {
       await node.connectToBootstrapPeer(peer);
     }
   }
-
-  // Start Bun HTTP/WebSocket server
-  startServer(node);
 
   // Log blockchain state every 30 seconds
   setInterval(() => {
