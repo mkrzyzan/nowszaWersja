@@ -58,6 +58,12 @@ export class GossipProtocol {
           interval: 1000  // Check for peers every second
         })
       ],
+      connectionManager: {
+        minConnections: 0,
+        maxConnections: 100,
+        autoDialInterval: 10000, // Try to maintain connections
+        dialTimeout: 30000 // 30 second timeout for dials
+      },
       services: {
         pubsub: gossipsub({
           emitSelf: false,
@@ -95,18 +101,31 @@ export class GossipProtocol {
 
     // Listen for peer discovery events and dial them
     this.libp2p.addEventListener('peer:discovery', async (evt) => {
-      const peerId = evt.detail.id.toString();
+      const peerId = evt.detail.id;
       const multiaddrs = evt.detail.multiaddrs;
-      console.log(`🔍 Peer discovered: ${peerId}`);
+      console.log(`🔍 Peer discovered: ${peerId.toString()}`);
       console.log(`   Multiaddrs: ${multiaddrs.map(ma => ma.toString()).join(', ')}`);
+      
+      // Store the peer in the peer store with its multiaddrs
+      try {
+        await this.libp2p?.peerStore.merge(peerId, {
+          multiaddrs: multiaddrs
+        });
+      } catch (err) {
+        console.log(`   Failed to store peer info: ${err}`);
+      }
       
       // Attempt to dial the discovered peer
       try {
         console.log(`   Dialing discovered peer...`);
-        await this.libp2p?.dial(evt.detail.id);
-        console.log(`   ✅ Successfully connected to discovered peer`);
+        // Dial using the peer ID - libp2p will use multiaddrs from peer store
+        const connection = await this.libp2p?.dial(peerId);
+        console.log(`   ✅ Successfully connected to discovered peer!`);
       } catch (error) {
-        console.log(`   Could not connect: ${error instanceof Error ? error.message : String(error)}`);
+        // Log detailed error for debugging
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.log(`   ⚠️  Connection attempt failed: ${errorMsg}`);
+        console.log(`   (This is normal if peer is not reachable yet)`);
       }
     });
 
