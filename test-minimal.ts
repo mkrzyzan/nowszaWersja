@@ -22,7 +22,7 @@ async function main() {
     },
     transports: [tcp()],
     streamMuxers: [yamux(), mplex()],
-    connectionEncryption: [noise()],
+    connectionEncrypters: [noise()],
     peerDiscovery: [mdns({ interval: 1000 })],
     services: {
       identify: identify(),
@@ -43,7 +43,7 @@ async function main() {
     },
     transports: [tcp()],
     streamMuxers: [yamux(), mplex()],
-    connectionEncryption: [noise()],
+    connectionEncrypters: [noise()],
     peerDiscovery: [mdns({ interval: 1000 })],
     services: {
       identify: identify(),

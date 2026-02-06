@@ -13,7 +13,7 @@ async function test() {
     },
     transports: [webSockets()],
     streamMuxers: [yamux(), mplex()],
-    connectionEncryption: [noise()]
+    connectionEncrypters: [noise()]
   });
   
   await node.start();

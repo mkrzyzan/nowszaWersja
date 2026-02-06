@@ -56,6 +56,10 @@ async function main() {
   if (node1Peers > 0 && node2Peers > 0) {
     console.log('   ✅ Nodes are connected!\n');
     
+    // Give gossipsub time to propagate topic subscriptions
+    console.log('Waiting for gossipsub topic subscription propagation...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
     // Test message propagation
     console.log('Testing message propagation...');
     
@@ -64,7 +68,8 @@ async function main() {
     node1.broadcast({
       type: 'TRANSACTION',
       timestamp: Date.now(),
-      data: { from: 'alice', to: 'bob', amount: 100 }
+      payload: { from: 'alice', to: 'bob', amount: 100 },
+      sender: 'node-1'
     });
     
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -74,7 +79,8 @@ async function main() {
     node2.broadcast({
       type: 'BLOCK',
       timestamp: Date.now(),
-      data: { index: 1, transactions: [] }
+      payload: { index: 1, transactions: [] },
+      sender: 'node-2'
     });
     
     await new Promise(resolve => setTimeout(resolve, 2000));
