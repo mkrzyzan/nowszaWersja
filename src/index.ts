@@ -4,6 +4,7 @@
  * A simple, lightweight mini blockchain node implementation
  */
 
+import { parseArgs } from 'util';
 import { Node } from './node';
 import { startServer } from './server';
 
@@ -24,18 +25,20 @@ async function main() {
 ╚═══════════════════════════════════════════════════════════════╝
   `);
 
-  // Parse command-line arguments
-  const args = process.argv.slice(2);
-  const bootstrapPeers: string[] = [];
-  
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--peer' || args[i] === '-p') {
-      if (i + 1 < args.length) {
-        bootstrapPeers.push(args[i + 1]);
-        i++; // Skip next argument
-      }
-    }
-  }
+  // Parse command-line arguments using util.parseArgs
+  const { values } = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+      peer: {
+        type: 'string',
+        short: 'p',
+        multiple: true,
+      },
+    },
+    strict: false,
+  });
+
+  const bootstrapPeers: string[] = (values.peer as string[] | undefined) || [];
 
   // Create and start the node
   const port = parseInt(process.env.PORT || '3000');
