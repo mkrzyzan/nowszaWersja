@@ -52,12 +52,40 @@ Tiny, opinionated PoS node (TypeScript + Bun) demonstrating DRAND-powered sortit
 
   `NODE_ENDPOINT=http://localhost:4000 WALLET_KEY_FILE=~/.grosik_wallet.json bun run cli/wallet.ts bob 50`
 
-- To force key regeneration without prompt:
+- To force key regeneration without prompt (requires WALLET_PASSPHRASE env var):
 
-  `bun run cli/wallet.ts bob 50 --force`
+  `WALLET_PASSPHRASE="my-secret-passphrase" bun run cli/wallet.ts bob 50 --force`
+
+### Wallet Security
+- **Encrypted Private Keys**: Wallet files now use AES-256-GCM encryption with PBKDF2 key derivation (100,000 iterations) to protect private keys.
+- **Passphrase Protection**: The wallet will prompt you for a passphrase when creating or loading a wallet. You can also set the `WALLET_PASSPHRASE` environment variable to avoid prompts.
+- **Legacy Wallet Migration**: Existing unencrypted wallet files will be detected and you'll be offered an option to upgrade them to the new encrypted format.
+- **Wallet File Format**: The new encrypted wallet format (v1) stores the public key in plaintext and the private key in an encrypted envelope containing salt, IV, and ciphertext.
+
+Example wallet file structure:
+```json
+{
+  "version": 1,
+  "publicKey": "3059301306...",
+  "encryptedPrivateKey": {
+    "version": 1,
+    "kdf": "PBKDF2",
+    "iterations": 100000,
+    "salt": "base64-encoded-salt",
+    "iv": "base64-encoded-iv",
+    "ciphertext": "base64-encoded-encrypted-data"
+  }
+}
+```
 
 ## What the wallet does (short)
-- Derives sender address from the public key, signs transaction data (from,to,amount,timestamp) with ECDSA (prime256v1), and POSTs the signed JSON to the node’s /transactions endpoint. The node validates and gossips valid transactions.
+- Derives sender address from the public key, signs transaction data (from,to,amount,timestamp) with ECDSA (P-256 curve using Web Crypto API), and POSTs the signed JSON to the node's /transactions endpoint. The node validates and gossips valid transactions.
+
+## Cryptography
+- **Key Generation**: ECDSA P-256 (prime256v1) curve using Web Crypto API
+- **Signing**: ECDSA with SHA-256
+- **Encryption**: AES-256-GCM with PBKDF2-derived keys
+- **Key Format**: PKCS#8 (private) and SPKI (public) in DER format, hex-encoded
 
 ## Tips
 - Health check: GET /health
