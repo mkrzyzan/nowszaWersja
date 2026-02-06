@@ -4,6 +4,7 @@
  * A simple, lightweight mini blockchain node implementation
  */
 
+import { parseArgs } from 'util';
 import { Node } from './node';
 import { startServer } from './server';
 
@@ -24,15 +25,39 @@ async function main() {
 ╚═══════════════════════════════════════════════════════════════╝
   `);
 
+  // Parse command-line arguments using util.parseArgs
+  const { values } = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+      peer: {
+        type: 'string',
+        short: 'p',
+        multiple: true,
+      },
+    },
+    strict: false,
+  });
+
+  const bootstrapPeers: string[] = (values.peer as string[] | undefined) || [];
+
   // Create and start the node
   const port = parseInt(process.env.PORT || '3000');
-  const node = await Node.create(port);
+  const nodeAddress = process.env.NODE_ADDRESS || 'localhost';
+  const node = await Node.create(port, nodeAddress);
 
   // Start the node
   await node.start();
 
-  // Start Bun HTTP/WebSocket server
+  // Start Bun HTTP/WebSocket server first so we can receive PEER_DISCOVERY responses
   startServer(node);
+
+  // Connect to bootstrap peers if provided
+  if (bootstrapPeers.length > 0) {
+    console.log(`\n🔗 Connecting to ${bootstrapPeers.length} bootstrap peer(s)...`);
+    for (const peer of bootstrapPeers) {
+      await node.connectToBootstrapPeer(peer);
+    }
+  }
 
   // Log blockchain state every 30 seconds
   setInterval(() => {

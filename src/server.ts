@@ -5,12 +5,12 @@
 import { Node } from './node';
 import type { Transaction, NetworkMessage } from './types';
 
-export function startServer(node: Node) {
-  const port = parseInt(process.env.PORT || '3000');
+export function startServer(node: Node, serverPort?: number) {
+  const port = serverPort || parseInt(process.env.PORT || '3000');
 
   const host = process.env.HOST || '0.0.0.0';
 
-  Bun.serve({
+  const server = Bun.serve({
     port,
     hostname: host,
     fetch: async (req: Request) => {
@@ -45,4 +45,6 @@ export function startServer(node: Node) {
   });
 
   console.log(`Bun server listening on http://${host}:${port} (accessible at http://localhost:${port})`);
+  
+  return server;
 }

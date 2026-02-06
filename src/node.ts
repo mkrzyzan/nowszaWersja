@@ -20,8 +20,9 @@ export class Node {
   private isRunning: boolean = false;
   private blockInterval: number = 5 * 60 * 1000; // 5 minutes in milliseconds
   private blockTimer?: Timer;
+  private nodeAddress: string = 'localhost'; // Network address where this node is reachable
 
-  private constructor(port: number, nodeId: string, keyPair: KeyPair, address: string) {
+  private constructor(port: number, nodeId: string, keyPair: KeyPair, address: string, nodeAddress?: string) {
     this.nodeId = nodeId;
     this.keyPair = keyPair;
     this.address = address;
@@ -29,6 +30,9 @@ export class Node {
     this.pos = new ProofOfStake();
     this.drand = new DrandClient();
     this.gossip = new GossipProtocol(this.nodeId, port);
+    if (nodeAddress) {
+      this.nodeAddress = nodeAddress;
+    }
 
     // Initialize with some stake for this node
     this.pos.addStake(this.address, 1000);
@@ -39,11 +43,11 @@ export class Node {
   /**
    * Create a new Node instance (async factory method)
    */
-  static async create(port: number = 3000): Promise<Node> {
+  static async create(port: number = 3000, nodeAddress?: string): Promise<Node> {
     const nodeId = CryptoUtils.generateNodeId();
     const keyPair = await CryptoUtils.generateKeyPair();
     const address = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
-    return new Node(port, nodeId, keyPair, address);
+    return new Node(port, nodeId, keyPair, address, nodeAddress);
   }
 
   /**
@@ -68,6 +72,35 @@ export class Node {
       const { address, amount } = message.payload;
       this.pos.addStake(address, amount);
     });
+
+    this.gossip.on('PEER_DISCOVERY', (message: NetworkMessage) => {
+      const { id, address, port } = message.payload;
+      // Only add peer if it's not ourselves
+      if (id !== this.nodeId) {
+        this.gossip.addPeer({
+          id,
+          address: address || 'localhost',
+          port,
+          lastSeen: Date.now()
+        });
+        
+        // Broadcast our own PEER_DISCOVERY so all peers learn about us
+        // This enables transitive peer discovery (A->B, C->B, then A<->C)
+        const responseMessage: NetworkMessage = {
+          type: 'PEER_DISCOVERY',
+          payload: {
+            id: this.nodeId,
+            address: this.nodeAddress,
+            port: this.gossip.getPort()
+          },
+          sender: this.nodeId,
+          timestamp: Date.now()
+        };
+        
+        // Broadcast to all peers (including the sender who will see we're already known)
+        this.gossip.broadcast(responseMessage);
+      }
+    });
   }
 
   /**
@@ -86,6 +119,65 @@ export class Node {
     } else if (block.index > latestBlock.index + 1) {
       // We're behind, might need to request the chain
       console.log('Received block indicates we are behind. Chain sync needed.');
+    }
+  }
+
+  /**
+   * Connect to a bootstrap peer
+   */
+  async connectToBootstrapPeer(peerAddress: string): Promise<void> {
+    try {
+      console.log(`Attempting to connect to bootstrap peer: ${peerAddress}`);
+      
+      // Parse peer address (format: host:port or just port)
+      let host = 'localhost';
+      let port = 3000;
+      
+      if (peerAddress.includes(':')) {
+        const parts = peerAddress.split(':');
+        host = parts[0];
+        port = parseInt(parts[1]);
+        
+        if (isNaN(port)) {
+          throw new Error(`Invalid port in peer address: ${peerAddress}. Expected format: host:port (e.g., localhost:3000)`);
+        }
+      } else {
+        port = parseInt(peerAddress);
+        
+        if (isNaN(port)) {
+          throw new Error(`Invalid port: ${peerAddress}. Expected a number (e.g., 3000) or host:port format (e.g., localhost:3000)`);
+        }
+      }
+
+      // Create PEER_DISCOVERY message
+      const message: NetworkMessage = {
+        type: 'PEER_DISCOVERY',
+        payload: {
+          id: this.nodeId,
+          address: this.nodeAddress,
+          port: this.gossip.getPort()
+        },
+        sender: this.nodeId,
+        timestamp: Date.now()
+      };
+
+      // Send to bootstrap peer
+      const url = `http://${host}:${port}/gossip`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(message)
+      });
+
+      if (response.ok) {
+        console.log(`✅ Successfully connected to bootstrap peer at ${host}:${port}`);
+        // The PEER_DISCOVERY handler on the bootstrap peer will add us to their peer list
+        // We don't add the bootstrap peer here because we'll receive their PEER_DISCOVERY response
+      } else {
+        console.error(`Failed to connect to bootstrap peer: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error(`Error connecting to bootstrap peer:`, error);
     }
   }
 
