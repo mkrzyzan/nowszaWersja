@@ -144,8 +144,16 @@ export class Node {
         const parts = peerAddress.split(':');
         host = parts[0];
         port = parseInt(parts[1]);
+        
+        if (isNaN(port)) {
+          throw new Error(`Invalid port in peer address: ${peerAddress}. Expected format: host:port (e.g., localhost:3000)`);
+        }
       } else {
         port = parseInt(peerAddress);
+        
+        if (isNaN(port)) {
+          throw new Error(`Invalid port: ${peerAddress}. Expected a number (e.g., 3000) or host:port format (e.g., localhost:3000)`);
+        }
       }
 
       // Create PEER_DISCOVERY message

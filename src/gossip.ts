@@ -136,13 +136,16 @@ export class GossipProtocol {
 
   /**
    * Request peers from known peers (peer discovery)
+   * Note: In a multi-host deployment, the address should be configured
+   * to reflect the actual network address where this node is reachable.
+   * For single-machine localhost testing, 'localhost' is sufficient.
    */
   discoverPeers(): void {
     const message: NetworkMessage = {
       type: 'PEER_DISCOVERY',
       payload: {
         id: this.nodeId,
-        address: 'localhost', // In production, this should be the actual network address
+        address: 'localhost',
         port: this.port
       },
       sender: this.nodeId,
