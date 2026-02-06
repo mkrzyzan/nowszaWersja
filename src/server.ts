@@ -23,7 +23,7 @@ export function startServer(node: Node) {
       if (req.method === 'POST' && url.pathname === '/transactions') {
         try {
           const tx = await req.json();
-          node.receiveTransactionFromClient(tx as Transaction);
+          await node.receiveTransactionFromClient(tx as Transaction);
           return new Response(JSON.stringify({ status: 'ok' }), { status: 201, headers: { 'Content-Type': 'application/json' } });
         } catch (err: any) {
           return new Response(String(err?.message || err), { status: 400 });

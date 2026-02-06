@@ -26,7 +26,7 @@ async function main() {
 
   // Create and start the node
   const port = parseInt(process.env.PORT || '3000');
-  const node = new Node(port);
+  const node = await Node.create(port);
 
   // Start the node
   await node.start();

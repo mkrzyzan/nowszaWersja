@@ -63,9 +63,9 @@ export class Blockchain {
   /**
    * Add a transaction to pending transactions
    */
-  addTransaction(transaction: Transaction): void {
+  async addTransaction(transaction: Transaction): Promise<void> {
     // Validate transaction signature
-    if (!this.isValidTransaction(transaction)) {
+    if (!(await this.isValidTransaction(transaction))) {
       throw new Error('Invalid transaction: signature verification failed');
     }
     this.pendingTransactions.push(transaction);
@@ -74,7 +74,7 @@ export class Blockchain {
   /**
    * Validate a transaction
    */
-  isValidTransaction(transaction: Transaction): boolean {
+  async isValidTransaction(transaction: Transaction): Promise<boolean> {
     // Check if transaction has a signature
     if (!transaction.signature || transaction.signature.length === 0) {
       console.error('Transaction missing signature');
@@ -102,7 +102,7 @@ export class Blockchain {
       transaction.timestamp
     );
     
-    const isValid = CryptoUtils.verify(transactionData, transaction.signature, transaction.publicKey);
+    const isValid = await CryptoUtils.verify(transactionData, transaction.signature, transaction.publicKey);
     
     if (!isValid) {
       console.error('Invalid transaction signature');

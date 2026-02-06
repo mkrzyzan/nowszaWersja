@@ -21,10 +21,10 @@ export class Node {
   private blockInterval: number = 5 * 60 * 1000; // 5 minutes in milliseconds
   private blockTimer?: Timer;
 
-  constructor(port: number = 3000) {
-    this.nodeId = CryptoUtils.generateNodeId();
-    this.keyPair = CryptoUtils.generateKeyPair();
-    this.address = CryptoUtils.getAddressFromPublicKey(this.keyPair.publicKey);
+  private constructor(port: number, nodeId: string, keyPair: KeyPair, address: string) {
+    this.nodeId = nodeId;
+    this.keyPair = keyPair;
+    this.address = address;
     this.blockchain = new Blockchain();
     this.pos = new ProofOfStake();
     this.drand = new DrandClient();
@@ -37,6 +37,16 @@ export class Node {
   }
 
   /**
+   * Create a new Node instance (async factory method)
+   */
+  static async create(port: number = 3000): Promise<Node> {
+    const nodeId = CryptoUtils.generateNodeId();
+    const keyPair = await CryptoUtils.generateKeyPair();
+    const address = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
+    return new Node(port, nodeId, keyPair, address);
+  }
+
+  /**
    * Setup handlers for network messages
    */
   private setupMessageHandlers(): void {
@@ -45,10 +55,10 @@ export class Node {
       this.handleReceivedBlock(block);
     });
 
-    this.gossip.on('TRANSACTION', (message: NetworkMessage) => {
+    this.gossip.on('TRANSACTION', async (message: NetworkMessage) => {
       const transaction = message.payload as Transaction;
       try {
-        this.blockchain.addTransaction(transaction);
+        await this.blockchain.addTransaction(transaction);
       } catch (error) {
         console.error('Rejected invalid transaction:', error);
       }
@@ -191,12 +201,12 @@ export class Node {
   /**
    * Add a transaction
    */
-  addTransaction(from: string, to: string, amount: number): void {
+  async addTransaction(from: string, to: string, amount: number): Promise<void> {
     const timestamp = Date.now();
     const transactionData = CryptoUtils.getTransactionData(from, to, amount, timestamp);
     
     // Sign the transaction using the node's private key
-    const signature = CryptoUtils.sign(transactionData, this.keyPair.privateKey);
+    const signature = await CryptoUtils.sign(transactionData, this.keyPair.privateKey);
     
     const transaction: Transaction = {
       from,
@@ -207,7 +217,7 @@ export class Node {
       publicKey: this.keyPair.publicKey
     };
     
-    this.blockchain.addTransaction(transaction);
+    await this.blockchain.addTransaction(transaction);
     
     // Broadcast transaction
     const message: NetworkMessage = {
@@ -223,9 +233,9 @@ export class Node {
    * Receive a signed transaction from an external client (wallet).
    * Validates and broadcasts to peers.
    */
-  receiveTransactionFromClient(transaction: Transaction): void {
+  async receiveTransactionFromClient(transaction: Transaction): Promise<void> {
     try {
-      this.blockchain.addTransaction(transaction);
+      await this.blockchain.addTransaction(transaction);
       const message: NetworkMessage = {
         type: 'TRANSACTION',
         payload: transaction,

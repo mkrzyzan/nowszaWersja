@@ -1,7 +1,19 @@
 import { CryptoUtils } from '../src/crypto';
+import { encryptJsonWithPassword, decryptJsonWithPassword, type EncryptedEnvelope } from '../src/encryption';
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
+
+interface WalletFileV1 {
+  version: 1;
+  publicKey: string;
+  encryptedPrivateKey: EncryptedEnvelope;
+}
+
+interface LegacyWalletFile {
+  privateKey: string;
+  publicKey: string;
+}
 
 async function askYesNo(question: string): Promise<boolean> {
   return new Promise(resolve => {
@@ -12,6 +24,149 @@ async function askYesNo(question: string): Promise<boolean> {
       resolve(a === '' || a.startsWith('y'));
     });
   });
+}
+
+async function askPassword(question: string): Promise<string> {
+  return new Promise(resolve => {
+    const rl = readline.createInterface({ 
+      input: process.stdin, 
+      output: process.stdout,
+      terminal: true
+    });
+    
+    // Hide password input by disabling echo
+    const stdin = process.stdin as any;
+    const wasRaw = stdin.isRaw;
+    if (stdin.setRawMode) {
+      stdin.setRawMode(true);
+    }
+    
+    process.stdout.write(question + ' ');
+    let password = '';
+    
+    stdin.on('data', (char: Buffer) => {
+      const c = char.toString('utf8');
+      
+      switch (c) {
+        case '\n':
+        case '\r':
+        case '\u0004': // Ctrl-D
+          stdin.pause();
+          if (stdin.setRawMode && wasRaw !== undefined) {
+            stdin.setRawMode(wasRaw);
+          }
+          process.stdout.write('\n');
+          rl.close();
+          resolve(password);
+          break;
+        case '\u0003': // Ctrl-C
+          process.exit(1);
+          break;
+        case '\u007f': // Backspace
+        case '\b':
+          if (password.length > 0) {
+            password = password.slice(0, -1);
+            process.stdout.write('\b \b');
+          }
+          break;
+        default:
+          password += c;
+          process.stdout.write('*');
+          break;
+      }
+    });
+  });
+}
+
+async function getPassphrase(force: boolean): Promise<string> {
+  // Check environment variable first
+  const envPass = process.env.WALLET_PASSPHRASE;
+  if (envPass) {
+    return envPass;
+  }
+  
+  // If force mode, require WALLET_PASSPHRASE env var
+  if (force) {
+    console.error('Error: --force mode requires WALLET_PASSPHRASE environment variable');
+    process.exit(1);
+  }
+  
+  // Prompt for passphrase
+  return await askPassword('Enter wallet passphrase:');
+}
+
+async function isLegacyWalletFile(data: any): Promise<boolean> {
+  return data && 
+         typeof data.privateKey === 'string' && 
+         typeof data.publicKey === 'string' && 
+         !data.version;
+}
+
+async function isEncryptedWalletFile(data: any): Promise<boolean> {
+  return data && 
+         data.version === 1 && 
+         typeof data.publicKey === 'string' && 
+         data.encryptedPrivateKey;
+}
+
+async function loadWallet(keyFile: string, passphrase: string, force: boolean): Promise<{ privateKey: string; publicKey: string }> {
+  const raw = fs.readFileSync(keyFile, 'utf-8');
+  const data = JSON.parse(raw);
+  
+  // Check if it's a legacy unencrypted wallet
+  if (await isLegacyWalletFile(data)) {
+    console.log('⚠️  Warning: This wallet file is using the old unencrypted format.');
+    
+    let shouldMigrate = force;
+    if (!force) {
+      shouldMigrate = await askYesNo('Would you like to upgrade it to the new encrypted format? (Y/n)');
+    }
+    
+    if (shouldMigrate) {
+      const legacy = data as LegacyWalletFile;
+      await saveWallet(keyFile, legacy.privateKey, legacy.publicKey, passphrase);
+      console.log('✅ Wallet upgraded to encrypted format.');
+      return { privateKey: legacy.privateKey, publicKey: legacy.publicKey };
+    } else {
+      console.log('⚠️  Continuing with unencrypted wallet (not recommended).');
+      return data as LegacyWalletFile;
+    }
+  }
+  
+  // Check if it's an encrypted wallet
+  if (await isEncryptedWalletFile(data)) {
+    const wallet = data as WalletFileV1;
+    try {
+      const decrypted = await decryptJsonWithPassword(wallet.encryptedPrivateKey, passphrase);
+      return {
+        privateKey: decrypted.privateKey,
+        publicKey: wallet.publicKey
+      };
+    } catch (err) {
+      console.error('Failed to decrypt wallet:', err instanceof Error ? err.message : err);
+      console.error('Incorrect passphrase or corrupted wallet file.');
+      process.exit(1);
+    }
+  }
+  
+  throw new Error('Unknown wallet file format');
+}
+
+async function saveWallet(keyFile: string, privateKey: string, publicKey: string, passphrase: string): Promise<void> {
+  // Encrypt the private key
+  const encryptedPrivateKey = await encryptJsonWithPassword({ privateKey }, passphrase);
+  
+  const walletData: WalletFileV1 = {
+    version: 1,
+    publicKey,
+    encryptedPrivateKey
+  };
+  
+  // Write atomically
+  const tmp = keyFile + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(walletData, null, 2));
+  fs.renameSync(tmp, keyFile);
+  fs.chmodSync(keyFile, 0o600);
 }
 
 async function main() {
@@ -29,11 +184,12 @@ async function main() {
   const home = process.env.HOME || '.';
   const keyFile = process.env.WALLET_KEY_FILE || path.join(home, '.grosik_wallet.json');
 
-  let keyPair: any;
+  let keyPair: { privateKey: string; publicKey: string };
+  
   if (fs.existsSync(keyFile)) {
     try {
-      const raw = fs.readFileSync(keyFile, 'utf-8');
-      keyPair = JSON.parse(raw);
+      const passphrase = await getPassphrase(force);
+      keyPair = await loadWallet(keyFile, passphrase, force);
     } catch (err) {
       console.error('Failed to read existing key file:', err);
       if (!force) {
@@ -44,14 +200,11 @@ async function main() {
         }
       }
 
-      keyPair = CryptoUtils.generateKeyPair();
+      const passphrase = await getPassphrase(force);
+      keyPair = await CryptoUtils.generateKeyPair();
       try {
-        // write atomically
-        const tmp = keyFile + '.tmp';
-        fs.writeFileSync(tmp, JSON.stringify(keyPair));
-        fs.renameSync(tmp, keyFile);
-        fs.chmodSync(keyFile, 0o600);
-        console.log(`Saved new keypair to ${keyFile}`);
+        await saveWallet(keyFile, keyPair.privateKey, keyPair.publicKey, passphrase);
+        console.log(`Saved new encrypted keypair to ${keyFile}`);
       } catch (e) {
         console.error('Failed to save key file:', e);
         process.exit(1);
@@ -66,13 +219,11 @@ async function main() {
       }
     }
 
-    keyPair = CryptoUtils.generateKeyPair();
+    const passphrase = await getPassphrase(force);
+    keyPair = await CryptoUtils.generateKeyPair();
     try {
-      const tmp = keyFile + '.tmp';
-      fs.writeFileSync(tmp, JSON.stringify(keyPair));
-      fs.renameSync(tmp, keyFile);
-      fs.chmodSync(keyFile, 0o600);
-      console.log(`Generated keypair and saved to ${keyFile}`);
+      await saveWallet(keyFile, keyPair.privateKey, keyPair.publicKey, passphrase);
+      console.log(`Generated encrypted keypair and saved to ${keyFile}`);
     } catch (e) {
       console.error('Failed to save key file:', e);
       process.exit(1);
@@ -82,7 +233,7 @@ async function main() {
   const from = CryptoUtils.getAddressFromPublicKey(keyPair.publicKey);
   const timestamp = Date.now();
   const txData = CryptoUtils.getTransactionData(from, to, amount, timestamp);
-  const signature = CryptoUtils.sign(txData, keyPair.privateKey);
+  const signature = await CryptoUtils.sign(txData, keyPair.privateKey);
 
   const tx = { from, to, amount, timestamp, signature, publicKey: keyPair.publicKey };
 

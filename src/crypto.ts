@@ -1,5 +1,6 @@
 /**
  * Cryptographic utilities for GROSIK
+ * Now using Web Crypto API (crypto.subtle)
  */
 
 import crypto from 'crypto';
@@ -7,6 +8,29 @@ import crypto from 'crypto';
 export interface KeyPair {
   privateKey: string;
   publicKey: string;
+}
+
+/**
+ * Convert buffer to hex string
+ */
+function bufToHex(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let hex = '';
+  for (let i = 0; i < bytes.length; i++) {
+    hex += bytes[i].toString(16).padStart(2, '0');
+  }
+  return hex;
+}
+
+/**
+ * Convert hex string to buffer
+ */
+function hexToBuf(hex: string): ArrayBuffer {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+  }
+  return bytes.buffer;
 }
 
 export class CryptoUtils {
@@ -36,23 +60,29 @@ export class CryptoUtils {
 
   /**
    * Generate an ECDSA key pair for signing and verification
+   * Now using Web Crypto API with P-256 curve
    */
-  static generateKeyPair(): KeyPair {
-    const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', {
-      namedCurve: 'prime256v1', // NIST P-256 curve, widely supported
-      publicKeyEncoding: {
-        type: 'spki',
-        format: 'der'
+  static async generateKeyPair(): Promise<KeyPair> {
+    const keyPair = await globalThis.crypto.subtle.generateKey(
+      {
+        name: 'ECDSA',
+        namedCurve: 'P-256' // Same as prime256v1
       },
-      privateKeyEncoding: {
-        type: 'pkcs8',
-        format: 'der'
-      }
-    });
+      true, // extractable
+      ['sign', 'verify']
+    );
+
+    // Export private key as PKCS8 DER format
+    const privateKeyDer = await globalThis.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
+    const privateKeyHex = bufToHex(privateKeyDer);
+
+    // Export public key as SPKI DER format
+    const publicKeyDer = await globalThis.crypto.subtle.exportKey('spki', keyPair.publicKey);
+    const publicKeyHex = bufToHex(publicKeyDer);
 
     return {
-      privateKey: privateKey.toString('hex'),
-      publicKey: publicKey.toString('hex')
+      privateKey: privateKeyHex,
+      publicKey: publicKeyHex
     };
   }
 
@@ -67,41 +97,71 @@ export class CryptoUtils {
 
   /**
    * Sign data using ECDSA with a private key
+   * Now using Web Crypto API
    */
-  static sign(data: string, privateKeyHex: string): string {
-    const privateKeyBuffer = Buffer.from(privateKeyHex, 'hex');
-    const privateKeyObject = crypto.createPrivateKey({
-      key: privateKeyBuffer,
-      format: 'der',
-      type: 'pkcs8'
-    });
+  static async sign(data: string, privateKeyHex: string): Promise<string> {
+    // Import private key from hex DER format
+    const privateKeyBuffer = hexToBuf(privateKeyHex);
+    const privateKey = await globalThis.crypto.subtle.importKey(
+      'pkcs8',
+      privateKeyBuffer,
+      {
+        name: 'ECDSA',
+        namedCurve: 'P-256'
+      },
+      false,
+      ['sign']
+    );
 
-    const sign = crypto.createSign('SHA256');
-    sign.update(data);
-    sign.end();
+    // Sign the data
+    const encoder = new TextEncoder();
+    const dataBuffer = encoder.encode(data);
 
-    const signature = sign.sign(privateKeyObject);
-    return signature.toString('hex');
+    const signature = await globalThis.crypto.subtle.sign(
+      {
+        name: 'ECDSA',
+        hash: { name: 'SHA-256' }
+      },
+      privateKey,
+      dataBuffer
+    );
+
+    return bufToHex(signature);
   }
 
   /**
    * Verify a signature using ECDSA with a public key
+   * Now using Web Crypto API
    */
-  static verify(data: string, signature: string, publicKeyHex: string): boolean {
+  static async verify(data: string, signature: string, publicKeyHex: string): Promise<boolean> {
     try {
-      const publicKeyBuffer = Buffer.from(publicKeyHex, 'hex');
-      const publicKeyObject = crypto.createPublicKey({
-        key: publicKeyBuffer,
-        format: 'der',
-        type: 'spki'
-      });
+      // Import public key from hex DER format
+      const publicKeyBuffer = hexToBuf(publicKeyHex);
+      const publicKey = await globalThis.crypto.subtle.importKey(
+        'spki',
+        publicKeyBuffer,
+        {
+          name: 'ECDSA',
+          namedCurve: 'P-256'
+        },
+        false,
+        ['verify']
+      );
 
-      const verify = crypto.createVerify('SHA256');
-      verify.update(data);
-      verify.end();
+      // Verify the signature
+      const encoder = new TextEncoder();
+      const dataBuffer = encoder.encode(data);
+      const signatureBuffer = hexToBuf(signature);
 
-      const signatureBuffer = Buffer.from(signature, 'hex');
-      return verify.verify(publicKeyObject, signatureBuffer);
+      return await globalThis.crypto.subtle.verify(
+        {
+          name: 'ECDSA',
+          hash: { name: 'SHA-256' }
+        },
+        publicKey,
+        signatureBuffer,
+        dataBuffer
+      );
     } catch (error) {
       console.error('Signature verification error:', error);
       return false;
