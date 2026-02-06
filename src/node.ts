@@ -220,6 +220,33 @@ export class Node {
   }
 
   /**
+   * Receive a signed transaction from an external client (wallet).
+   * Validates and broadcasts to peers.
+   */
+  receiveTransactionFromClient(transaction: Transaction): void {
+    try {
+      this.blockchain.addTransaction(transaction);
+      const message: NetworkMessage = {
+        type: 'TRANSACTION',
+        payload: transaction,
+        sender: this.nodeId,
+        timestamp: Date.now()
+      };
+      this.gossip.broadcast(message);
+    } catch (error) {
+      // rethrow so the HTTP server can return an error
+      throw error;
+    }
+  }
+
+  /**
+   * Receive a gossip network message (from HTTP/WebSocket)
+   */
+  receiveGossipMessage(message: NetworkMessage): void {
+    this.gossip.handleMessage(message);
+  }
+
+  /**
    * Get blockchain state
    */
   getBlockchainState(): {

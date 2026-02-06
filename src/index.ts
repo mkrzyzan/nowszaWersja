@@ -5,6 +5,7 @@
  */
 
 import { Node } from './node';
+import { startServer } from './server';
 
 async function main() {
   console.log(`
@@ -29,6 +30,9 @@ async function main() {
 
   // Start the node
   await node.start();
+
+  // Start Bun HTTP/WebSocket server
+  startServer(node);
 
   // Log blockchain state every 30 seconds
   setInterval(() => {
