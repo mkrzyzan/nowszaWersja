@@ -5,6 +5,9 @@
 import { GossipProtocol } from './src/gossip';
 import type { NetworkMessage } from './src/types';
 
+// Time for gossipsub topic subscription propagation between peers (in ms)
+const GOSSIPSUB_PROPAGATION_DELAY_MS = 3000;
+
 async function main() {
   console.log('🧪 Testing P2P Connection with WebSocket Transport\n');
   
@@ -58,7 +61,7 @@ async function main() {
     
     // Give gossipsub time to propagate topic subscriptions
     console.log('Waiting for gossipsub topic subscription propagation...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, GOSSIPSUB_PROPAGATION_DELAY_MS));
     
     // Test message propagation
     console.log('Testing message propagation...');

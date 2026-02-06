@@ -154,12 +154,14 @@ export class GossipProtocol {
       }
       
       // Dial the peer to establish connection
-      try {
-        await this.libp2p?.dial(peerId);
-        console.log(`   🔗 Connected to peer`);
-      } catch (err: any) {
-        // Connection errors are common (already connected, dial in progress, etc.)
-        console.log(`   ℹ️  Dial info: ${err.message || err}`);
+      if (this.libp2p) {
+        try {
+          await this.libp2p.dial(peerId);
+          console.log(`   🔗 Connected to peer`);
+        } catch (err: any) {
+          // Connection errors are common (already connected, dial in progress, etc.)
+          console.log(`   ℹ️  Dial info: ${err.message || err}`);
+        }
       }
     });
 
