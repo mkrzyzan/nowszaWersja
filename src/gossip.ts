@@ -13,6 +13,7 @@ import { identify } from '@libp2p/identify';
 import { kadDHT } from '@libp2p/kad-dht';
 import { ping } from '@libp2p/ping';
 import { mdns } from '@libp2p/mdns';
+import { bootstrap } from '@libp2p/bootstrap';
 import type { Message } from '@libp2p/interface';
 import { multiaddr } from '@multiformats/multiaddr';
 import type { Peer, NetworkMessage, Block } from './types';
@@ -25,6 +26,8 @@ export class GossipProtocol {
   private messageHandlers: Map<string, (message: NetworkMessage) => void> = new Map();
   private seenMessages: Set<string> = new Set();
   private started: boolean = false;
+  private isBootstrapping: boolean = false;  // Track if this node is connecting to bootstrap peers
+  private bootstrapPeers: string[] = [];  // Store bootstrap peer multiaddrs
   private topics: string[] = [
     '/grosik/block',
     '/grosik/transaction',
@@ -56,12 +59,14 @@ export class GossipProtocol {
       peerDiscovery: [
         mdns({
           interval: 1000  // Check for peers every second
-        })
+        }),
+        // Add bootstrap discovery if we have bootstrap peers
+        ...(this.bootstrapPeers.length > 0 ? [bootstrap({ list: this.bootstrapPeers })] : [])
       ],
       connectionManager: {
-        minConnections: 0,
         maxConnections: 100,
-        dialTimeout: 30000 // 30 second timeout for dials
+        dialTimeout: 30000, // 30 second timeout for dials
+        maxParallelDials: 3
       },
       services: {
         pubsub: gossipsub({
@@ -97,58 +102,75 @@ export class GossipProtocol {
       const peerId = evt.detail.toString();
       console.log(`❌ Peer disconnected: ${peerId}`);
     });
+    
+    // Listen for connection manager events
+    this.libp2p.addEventListener('connection:open', (evt) => {
+      console.log(`🔗 Connection opened to: ${evt.detail.remotePeer.toString()}`);
+    });
+    
+    this.libp2p.addEventListener('connection:close', (evt) => {
+      console.log(`🔌 Connection closed to: ${evt.detail.remotePeer.toString()}`);
+    });
 
-    // Listen for peer discovery events and dial them
+    // Listen for peer discovery events
+    // Store peer info and try to establish connection (only if we're the bootstrap client)
     this.libp2p.addEventListener('peer:discovery', async (evt) => {
       const peerId = evt.detail.id;
       const discoveredMultiaddrs = evt.detail.multiaddrs;
-      console.log(`🔍 Peer discovered: ${peerId.toString()}`);
-      console.log(`   Multiaddrs: ${discoveredMultiaddrs.map(ma => ma.toString()).join(', ')}`);
+      console.log(`🔍 Peer discovered via mDNS: ${peerId.toString()}`);
       
       // Construct complete multiaddrs with peer ID component
-      // This is necessary because mDNS-discovered addrs often lack the /p2p/<peerID> suffix
       const completeMultiaddrs = discoveredMultiaddrs.map(ma => {
         const maStr = ma.toString();
-        // Check if multiaddr already has peer ID
         if (maStr.includes('/p2p/')) {
           return ma;
         }
-        // Append peer ID to make it a complete multiaddr
         return multiaddr(`${maStr}/p2p/${peerId.toString()}`);
       });
       
-      console.log(`   Complete multiaddrs with peer ID: ${completeMultiaddrs.map(ma => ma.toString()).join(', ')}`);
-      
-      // Store the peer in the peer store with complete multiaddrs
+      // Store the peer in the peer store
       try {
         await this.libp2p?.peerStore.merge(peerId, {
           multiaddrs: completeMultiaddrs
         });
-        console.log(`   ✅ Peer info stored in peer store`);
-      } catch (err) {
-        console.log(`   ⚠️  Failed to store peer info: ${err}`);
-        return; // Can't proceed without storing peer info
-      }
-      
-      // Try to establish connection
-      // Use setTimeout to allow peer store to be fully updated
-      setTimeout(async () => {
-        try {
-          console.log(`   Attempting to dial peer...`);
-          const connections = this.libp2p?.getConnections(peerId);
-          if (connections && connections.length > 0) {
-            console.log(`   Already connected to peer`);
-            return;
-          }
-          
-          await this.libp2p?.dial(peerId);
-          console.log(`   ✅ Successfully connected!`);
-        } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          console.log(`   Connection pending: ${errorMsg}`);
-          console.log(`   Will retry automatically`);
+        console.log(`   ✅ Stored in peer store`);
+        
+        // Only the bootstrapping node should try to dial to avoid simultaneous dial conflicts
+        if (this.isBootstrapping) {
+          // Try to connect - dial using the complete multiaddr
+          setTimeout(async () => {
+            try {
+              // Check if already connected
+              const connections = this.libp2p?.getConnections(peerId);
+              if (connections && connections.length > 0) {
+                console.log(`   ✅ Already connected`);
+                return;
+              }
+              
+              // Try dialing with each complete multiaddr until one succeeds
+              for (const ma of completeMultiaddrs) {
+                try {
+                  console.log(`   Attempting to dial via ${ma.toString()}...`);
+                  await this.libp2p?.dial(ma);
+                  console.log(`   ✅ Successfully connected!`);
+                  return; // Success, stop trying
+                } catch (dialError) {
+                  // Try next address
+                  const errMsg = dialError instanceof Error ? dialError.message : String(dialError);
+                  console.log(`   Failed: ${errMsg}`);
+                }
+              }
+              console.log(`   ⚠️  All dial attempts failed`);
+            } catch (error) {
+              console.log(`   ⚠️  Connection error: ${error instanceof Error ? error.message : String(error)}`);
+            }
+          }, 3000); // Wait 3 seconds before dialing
+        } else {
+          console.log(`   Waiting for remote peer to connect to us`);
         }
-      }, 1000); // Wait 1 second before dialing
+      } catch (err) {
+        console.log(`   ⚠️  Failed to store: ${err}`);
+      }
     });
 
     console.log(`\nlibp2p node started!`);
@@ -207,6 +229,8 @@ export class GossipProtocol {
     if (!this.libp2p || !this.started) {
       throw new Error('libp2p not started');
     }
+    
+    this.isBootstrapping = true;  // Mark that we're connecting to bootstrap peers
     
     // Convert localhost to 127.0.0.1
     const addr = address === 'localhost' ? '127.0.0.1' : address;
