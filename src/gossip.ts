@@ -1,16 +1,40 @@
 /**
- * Simple gossip protocol for GROSIK
- * Enables peer-to-peer communication between nodes
+ * libp2p-based gossip protocol for GROSIK
+ * Enables peer-to-peer communication between nodes using libp2p gossipsub
  */
 
+import { createLibp2p, type Libp2p } from 'libp2p';
+import { tcp } from '@libp2p/tcp';
+import { webSockets } from '@libp2p/websockets';
+import { mplex } from '@libp2p/mplex';
+import { yamux } from '@libp2p/yamux';
+import { noise } from '@libp2p/noise';
+import { gossipsub } from '@libp2p/gossipsub';
+import { identify } from '@libp2p/identify';
+import { kadDHT } from '@libp2p/kad-dht';
+import { ping } from '@libp2p/ping';
+import { mdns } from '@libp2p/mdns';
+import { bootstrap } from '@libp2p/bootstrap';
+import type { Message } from '@libp2p/interface';
+import { multiaddr } from '@multiformats/multiaddr';
 import type { Peer, NetworkMessage, Block } from './types';
 
 export class GossipProtocol {
+  private libp2p?: Libp2p;
   private peers: Map<string, Peer> = new Map();
   private nodeId: string;
   private port: number;
   private messageHandlers: Map<string, (message: NetworkMessage) => void> = new Map();
   private seenMessages: Set<string> = new Set();
+  private started: boolean = false;
+  private isBootstrapping: boolean = false;  // Track if this node is connecting to bootstrap peers
+  private bootstrapPeers: string[] = [];  // Store bootstrap peer multiaddrs
+  private topics: string[] = [
+    '/grosik/block',
+    '/grosik/transaction',
+    '/grosik/peer-discovery',
+    '/grosik/stake-update'
+  ];
 
   constructor(nodeId: string, port: number) {
     this.nodeId = nodeId;
@@ -18,11 +42,194 @@ export class GossipProtocol {
   }
 
   /**
-   * Add a peer to the network
+   * Start the libp2p node
    */
-  addPeer(peer: Peer): void {
+  async start(): Promise<void> {
+    if (this.started) {
+      return;
+    }
+
+    // Create libp2p node with both TCP and WebSocket transports
+    this.libp2p = await createLibp2p({
+      addresses: {
+        listen: [
+          `/ip4/0.0.0.0/tcp/${this.port}`,  // TCP for node-to-node
+          `/ip4/0.0.0.0/tcp/${this.port + 100}/ws`  // WebSocket for browsers (offset by 100 to avoid collisions)
+        ]
+      },
+      transports: [
+        tcp(),
+        webSockets()
+      ],
+      streamMuxers: [mplex(), yamux()],
+      connectionEncrypters: [noise()],
+      peerDiscovery: [
+        mdns({
+          interval: 1000  // Check for peers every second
+        }),
+        // Add bootstrap discovery if we have bootstrap peers
+        ...(this.bootstrapPeers.length > 0 ? [bootstrap({ list: this.bootstrapPeers })] : [])
+      ],
+      connectionManager: {
+        maxConnections: 100,
+        minConnections: 1, // Try to maintain at least 1 connection
+        dialTimeout: 30000, // 30 second timeout for dials
+        maxParallelDials: 3
+      },
+      services: {
+        pubsub: gossipsub({
+          emitSelf: false,
+          allowPublishToZeroTopicPeers: true,
+          // Enable connection on subscribe
+          directConnect: true
+        }),
+        identify: identify(),
+        // DHT temporarily disabled for debugging
+        // dht: kadDHT({
+        //   // Enable automatic dialing for DHT queries
+        //   clientMode: false
+        // }),
+        ping: ping()
+      }
+    });
+
+    await this.libp2p.start();
+    this.started = true;
+
+    // Subscribe to all topics
+    for (const topic of this.topics) {
+      this.libp2p.services.pubsub.subscribe(topic);
+    }
+
+    // Handle incoming messages
+    this.libp2p.services.pubsub.addEventListener('message', (evt: CustomEvent<Message>) => {
+      this.handlePubsubMessage(evt.detail);
+    });
+
+    // Track peer connections
+    this.libp2p.addEventListener('peer:connect', (evt) => {
+      const peerId = evt.detail.toString();
+      console.log(`✅ Peer connected: ${peerId}`);
+    });
+
+    this.libp2p.addEventListener('peer:disconnect', (evt) => {
+      const peerId = evt.detail.toString();
+      console.log(`❌ Peer disconnected: ${peerId}`);
+    });
+    
+    // Listen for connection manager events
+    this.libp2p.addEventListener('connection:open', (evt) => {
+      console.log(`🔗 Connection opened to: ${evt.detail.remotePeer.toString()}`);
+    });
+    
+    this.libp2p.addEventListener('connection:close', (evt) => {
+      console.log(`🔌 Connection closed to: ${evt.detail.remotePeer.toString()}`);
+    });
+
+    // Listen for peer discovery events
+    // Store peer info and dial to establish connection
+    this.libp2p.addEventListener('peer:discovery', async (evt) => {
+      const peerId = evt.detail.id;
+      const discoveredMultiaddrs = evt.detail.multiaddrs;
+      console.log(`🔍 Peer discovered: ${peerId.toString()}`);
+      console.log(`   Multiaddrs: ${discoveredMultiaddrs.map(ma => ma.toString()).join(', ')}`);
+      
+      // Construct complete multiaddrs with peer ID component
+      const completeMultiaddrs = discoveredMultiaddrs.map(ma => {
+        const maStr = ma.toString();
+        if (maStr.includes('/p2p/')) {
+          return ma;
+        }
+        return multiaddr(`${maStr}/p2p/${peerId.toString()}`);
+      });
+      
+      // Store the peer in the peer store
+      try {
+        await this.libp2p?.peerStore.merge(peerId, {
+          multiaddrs: completeMultiaddrs
+        });
+        console.log(`   ✅ Stored in peer store`);
+      } catch (err) {
+        console.log(`   ⚠️  Failed to store: ${err}`);
+      }
+      
+      // Dial the peer to establish connection
+      if (this.libp2p) {
+        try {
+          await this.libp2p.dial(peerId);
+          console.log(`   🔗 Connected to peer`);
+        } catch (err: any) {
+          // Connection errors are common (already connected, dial in progress, etc.)
+          console.log(`   ℹ️  Dial info: ${err.message || err}`);
+        }
+      }
+    });
+
+    console.log(`\nlibp2p node started!`);
+    console.log(`Peer ID: ${this.libp2p.peerId.toString()}`);
+    console.log(`\nListening on:`);
+    this.libp2p.getMultiaddrs().forEach(addr => {
+      console.log(`  ${addr.toString()}`);
+    });
+    console.log(`\n💡 To connect another node to this one, use:`);
+    console.log(`   --peer localhost:${this.port - 1000}\n`);
+  }
+
+  /**
+   * Stop the libp2p node
+   */
+  async stop(): Promise<void> {
+    if (this.libp2p) {
+      await this.libp2p.stop();
+      this.started = false;
+      console.log('libp2p node stopped');
+    }
+  }
+
+  /**
+   * Handle incoming pubsub messages
+   */
+  private handlePubsubMessage(message: Message): void {
+    try {
+      const data = new TextDecoder().decode(message.data);
+      const networkMessage: NetworkMessage = JSON.parse(data);
+      this.handleMessage(networkMessage);
+    } catch (error) {
+      console.error('Error handling pubsub message:', error);
+    }
+  }
+
+  /**
+   * Add a peer to the network (for compatibility with old API)
+   * Note: With libp2p, peers are discovered automatically through gossipsub and DHT.
+   * This method is kept for compatibility but doesn't perform manual dialing.
+   * Use addBootstrapPeer() for explicit peer connections.
+   */
+  async addPeer(peer: Peer): Promise<void> {
     this.peers.set(peer.id, peer);
     console.log(`Added peer: ${peer.id} at ${peer.address}:${peer.port}`);
+    
+    // Peers will be discovered automatically via gossipsub topic subscriptions and DHT
+    // No manual dialing needed here
+  }
+
+  /**
+   * Add a bootstrap peer
+   * With gossipsub, peers will connect automatically once discovered via mDNS
+   */
+  async addBootstrapPeer(address: string, port: number): Promise<void> {
+    if (!this.libp2p || !this.started) {
+      throw new Error('libp2p not started');
+    }
+    
+    this.isBootstrapping = true;  // Mark that we're connecting to bootstrap peers
+    
+    // Convert localhost to 127.0.0.1
+    const addr = address === 'localhost' ? '127.0.0.1' : address;
+    console.log(`📋 Registered bootstrap peer hint: ${addr}:${port}`);
+    console.log(`   Peer will be discovered via mDNS and connected automatically`);
+    
+    // No need to manually dial - mDNS will discover the peer and gossipsub will connect
   }
 
   /**
@@ -34,16 +241,29 @@ export class GossipProtocol {
   }
 
   /**
-   * Get all peers
+   * Get all peers from libp2p connections
    */
   getPeers(): Peer[] {
+    if (this.libp2p && this.started) {
+      // Get peers from libp2p connections
+      const libp2pPeers = this.libp2p.getPeers();
+      return libp2pPeers.map(peerId => ({
+        id: peerId.toString(),
+        address: 'unknown',
+        port: 0,
+        lastSeen: Date.now()
+      }));
+    }
     return Array.from(this.peers.values());
   }
 
   /**
-   * Get peer count
+   * Get peer count from libp2p connections
    */
   getPeerCount(): number {
+    if (this.libp2p && this.started) {
+      return this.libp2p.getPeers().length;
+    }
     return this.peers.size;
   }
 
@@ -55,24 +275,7 @@ export class GossipProtocol {
   }
 
   /**
-   * Send a message to a peer over HTTP
-   */
-  private async sendToPeer(peer: Peer, message: NetworkMessage): Promise<void> {
-    try {
-      const url = `http://${peer.address}:${peer.port}/gossip`;
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(message)
-      });
-    } catch (error) {
-      // Peer might be unreachable, log but don't crash
-      console.log(`Failed to send ${message.type} to peer ${peer.id.substring(0, 16)}...: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  /**
-   * Broadcast a message to all peers
+   * Broadcast a message to all peers using libp2p pubsub
    */
   broadcast(message: NetworkMessage): void {
     const messageId = this.getMessageId(message);
@@ -90,12 +293,32 @@ export class GossipProtocol {
       messagesToDelete.forEach(id => this.seenMessages.delete(id));
     }
 
-    console.log(`Broadcasting ${message.type} message to ${this.peers.size} peers`);
+    // Get the topic for this message type
+    const topic = this.getTopicForMessageType(message.type);
     
-    // Actually send the message over HTTP to each peer
-    this.peers.forEach(peer => {
-      this.sendToPeer(peer, message);
-    });
+    // Publish via libp2p pubsub
+    if (this.libp2p && this.started) {
+      try {
+        const data = new TextEncoder().encode(JSON.stringify(message));
+        this.libp2p.services.pubsub.publish(topic, data);
+        console.log(`Broadcasting ${message.type} message via libp2p gossipsub`);
+      } catch (error) {
+        console.error(`Failed to broadcast message: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  }
+
+  /**
+   * Get the topic name for a message type
+   */
+  private getTopicForMessageType(type: string): string {
+    const topicMap: Record<string, string> = {
+      'BLOCK': '/grosik/block',
+      'TRANSACTION': '/grosik/transaction',
+      'PEER_DISCOVERY': '/grosik/peer-discovery',
+      'STAKE_UPDATE': '/grosik/stake-update'
+    };
+    return topicMap[type] || '/grosik/default';
   }
 
   /**

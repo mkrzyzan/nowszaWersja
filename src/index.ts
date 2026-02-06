@@ -42,14 +42,15 @@ async function main() {
 
   // Create and start the node
   const port = parseInt(process.env.PORT || '3000');
+  const libp2pPort = parseInt(process.env.LIBP2P_PORT || String(port + 1000)); // Default to PORT + 1000
   const nodeAddress = process.env.NODE_ADDRESS || 'localhost';
-  const node = new Node(port, nodeAddress);
+  const node = new Node(port, libp2pPort, nodeAddress);
 
   // Start the node
   await node.start();
 
-  // Start Bun HTTP/WebSocket server first so we can receive PEER_DISCOVERY responses
-  startServer(node);
+  // Start Bun HTTP server for transaction submissions
+  startServer(node, port);
 
   // Connect to bootstrap peers if provided
   if (bootstrapPeers.length > 0) {
@@ -71,15 +72,15 @@ async function main() {
   }, 30000);
 
   // Handle shutdown gracefully
-  process.on('SIGINT', () => {
+  process.on('SIGINT', async () => {
     console.log('\nShutting down gracefully...');
-    node.stop();
+    await node.stop();
     process.exit(0);
   });
 
-  process.on('SIGTERM', () => {
+  process.on('SIGTERM', async () => {
     console.log('\nShutting down gracefully...');
-    node.stop();
+    await node.stop();
     process.exit(0);
   });
 }
