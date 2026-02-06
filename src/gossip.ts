@@ -55,6 +55,23 @@ export class GossipProtocol {
   }
 
   /**
+   * Send a message to a peer over HTTP
+   */
+  private async sendToPeer(peer: Peer, message: NetworkMessage): Promise<void> {
+    try {
+      const url = `http://${peer.address}:${peer.port}/gossip`;
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(message)
+      });
+    } catch (error) {
+      // Peer might be unreachable, log but don't crash
+      console.log(`Failed to send ${message.type} to peer ${peer.id.substring(0, 16)}...: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
    * Broadcast a message to all peers
    */
   broadcast(message: NetworkMessage): void {
@@ -75,10 +92,9 @@ export class GossipProtocol {
 
     console.log(`Broadcasting ${message.type} message to ${this.peers.size} peers`);
     
-    // In a real implementation, this would send the message over network
-    // For this simple implementation, we'll simulate it
+    // Actually send the message over HTTP to each peer
     this.peers.forEach(peer => {
-      this.simulateSendToPeer(peer, message);
+      this.sendToPeer(peer, message);
     });
   }
 
@@ -113,15 +129,6 @@ export class GossipProtocol {
   }
 
   /**
-   * Simulate sending a message to a peer
-   * In a real implementation, this would use TCP/UDP sockets
-   */
-  private simulateSendToPeer(peer: Peer, message: NetworkMessage): void {
-    // This is a simulation - in production, use actual network calls
-    // console.log(`Sent ${message.type} to peer ${peer.id}`);
-  }
-
-  /**
    * Broadcast a new block
    */
   broadcastBlock(block: Block): void {
@@ -136,12 +143,16 @@ export class GossipProtocol {
 
   /**
    * Request peers from known peers (peer discovery)
+   * Note: In a multi-host deployment, the address should be configured
+   * to reflect the actual network address where this node is reachable.
+   * For single-machine localhost testing, 'localhost' is sufficient.
    */
   discoverPeers(): void {
     const message: NetworkMessage = {
       type: 'PEER_DISCOVERY',
       payload: {
         id: this.nodeId,
+        address: 'localhost',
         port: this.port
       },
       sender: this.nodeId,
@@ -181,5 +192,12 @@ export class GossipProtocol {
    */
   getNodeId(): string {
     return this.nodeId;
+  }
+
+  /**
+   * Get port
+   */
+  getPort(): number {
+    return this.port;
   }
 }

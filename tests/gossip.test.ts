@@ -194,4 +194,37 @@ describe('GossipProtocol', () => {
     // Should not throw
     expect(() => gossip.discoverPeers()).not.toThrow();
   });
+
+  test('should include address in peer discovery message', () => {
+    let discoveryMessage: NetworkMessage | null = null;
+    
+    // Add a peer so broadcast actually sends
+    gossip.addPeer({
+      id: 'peer1',
+      address: '127.0.0.1',
+      port: 3001,
+      lastSeen: Date.now()
+    });
+
+    // Intercept broadcast by checking the message handler
+    const originalBroadcast = gossip.broadcast.bind(gossip);
+    try {
+      gossip.broadcast = (message: NetworkMessage) => {
+        if (message.type === 'PEER_DISCOVERY') {
+          discoveryMessage = message;
+        }
+        originalBroadcast(message);
+      };
+
+      gossip.discoverPeers();
+      
+      expect(discoveryMessage).not.toBeNull();
+      expect(discoveryMessage?.payload).toHaveProperty('id');
+      expect(discoveryMessage?.payload).toHaveProperty('address');
+      expect(discoveryMessage?.payload).toHaveProperty('port');
+    } finally {
+      // Restore original method
+      gossip.broadcast = originalBroadcast;
+    }
+  });
 });

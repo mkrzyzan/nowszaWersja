@@ -39,6 +39,22 @@ Tiny, opinionated PoS node (TypeScript + Bun) demonstrating DRAND-powered sortit
 
   `PORT=4000 bun run src/index.ts`
 
+- Start a node and connect to existing peer(s):
+
+  `bun run src/index.ts --peer localhost:3000`
+  
+  or with multiple peers:
+  
+  `PORT=4000 bun run src/index.ts --peer 3000 --peer localhost:5000`
+
+  You can also use the short form `-p`:
+  
+  `PORT=4000 bun run src/index.ts -p 3000`
+
+- Start on different hosts (for multi-machine deployments):
+
+  `PORT=4000 NODE_ADDRESS=192.168.1.100 bun run src/index.ts --peer 192.168.1.101:3000`
+
 ### CLI wallet (run & examples)
 - Send a transaction using the bundled wallet (creates/uses a local keyfile):
 
@@ -61,7 +77,8 @@ Tiny, opinionated PoS node (TypeScript + Bun) demonstrating DRAND-powered sortit
 
 ## Tips
 - Health check: GET /health
-- Simulate a network by running multiple nodes on different PORTs and exchanging gossip messages via /gossip.
+- Simulate a network by running multiple nodes on different PORTs and connecting them using the `--peer` flag.
+- You can also manually exchange gossip messages via /gossip endpoint.
 - Keep WALLET_KEY_FILE to maintain a stable address between runs.
 - This project is in-memory and educational — not production-grade.
 
