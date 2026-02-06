@@ -85,15 +85,39 @@ export class GossipProtocol {
     // Track peer connections
     this.libp2p.addEventListener('peer:connect', (evt) => {
       const peerId = evt.detail.toString();
-      console.log(`Peer connected: ${peerId}`);
+      console.log(`✅ Peer connected: ${peerId}`);
     });
 
     this.libp2p.addEventListener('peer:disconnect', (evt) => {
       const peerId = evt.detail.toString();
-      console.log(`Peer disconnected: ${peerId}`);
+      console.log(`❌ Peer disconnected: ${peerId}`);
     });
 
-    console.log(`libp2p node started with PeerId: ${this.libp2p.peerId.toString()}`);
+    // Listen for peer discovery events and dial them
+    this.libp2p.addEventListener('peer:discovery', async (evt) => {
+      const peerId = evt.detail.id.toString();
+      const multiaddrs = evt.detail.multiaddrs;
+      console.log(`🔍 Peer discovered: ${peerId}`);
+      console.log(`   Multiaddrs: ${multiaddrs.map(ma => ma.toString()).join(', ')}`);
+      
+      // Attempt to dial the discovered peer
+      try {
+        console.log(`   Dialing discovered peer...`);
+        await this.libp2p?.dial(evt.detail.id);
+        console.log(`   ✅ Successfully connected to discovered peer`);
+      } catch (error) {
+        console.log(`   Could not connect: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    });
+
+    console.log(`\nlibp2p node started!`);
+    console.log(`Peer ID: ${this.libp2p.peerId.toString()}`);
+    console.log(`\nListening on:`);
+    this.libp2p.getMultiaddrs().forEach(addr => {
+      console.log(`  ${addr.toString()}`);
+    });
+    console.log(`\n💡 To connect another node to this one, use:`);
+    console.log(`   --peer localhost:${this.port - 1000}\n`);
   }
 
   /**
@@ -135,10 +159,8 @@ export class GossipProtocol {
   }
 
   /**
-   * Add a bootstrap peer hint for discovery
-   * Note: Direct dialing without peer ID is not supported by libp2p.
-   * Instead, we rely on mDNS and gossipsub for automatic peer discovery.
-   * This method registers the peer information for tracking purposes.
+   * Add a bootstrap peer and attempt to connect
+   * This tries to dial the peer directly if we can construct a valid multiaddr
    */
   async addBootstrapPeer(address: string, port: number): Promise<void> {
     if (!this.libp2p || !this.started) {
@@ -147,14 +169,24 @@ export class GossipProtocol {
     
     // Convert localhost to 127.0.0.1
     const addr = address === 'localhost' ? '127.0.0.1' : address;
-    console.log(`Registered bootstrap peer hint: ${addr}:${port}`);
-    console.log(`Peer discovery via mDNS and gossipsub will connect automatically`);
+    const multiaddr_str = `/ip4/${addr}/tcp/${port}`;
     
-    // Note: We cannot dial without knowing the peer ID ahead of time.
-    // libp2p will discover and connect to this peer automatically through:
-    // 1. mDNS (for local network)
-    // 2. Gossipsub topic subscriptions
-    // 3. Kad-DHT peer routing
+    console.log(`Attempting to connect to bootstrap peer at ${multiaddr_str}`);
+    console.log(`Note: Connection will succeed once peer is discovered via mDNS`);
+    
+    // Store the multiaddr for the connection manager to try
+    try {
+      const ma = multiaddr(multiaddr_str);
+      
+      // Try to dial - this may fail initially but libp2p will retry
+      // The connection will establish once mDNS discovers the peer
+      this.libp2p.dial(ma).catch((err) => {
+        console.log(`Initial dial attempt: ${err.message}`);
+        console.log(`Will retry via mDNS discovery...`);
+      });
+    } catch (error) {
+      console.log(`Bootstrap peer hint registered: ${multiaddr_str}`);
+    }
   }
 
   /**

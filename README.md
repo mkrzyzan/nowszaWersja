@@ -129,24 +129,32 @@ PORT=3000 NODE_ADDRESS=192.168.1.101 bun run src/index.ts --peer 192.168.1.100:3
 - **HTTP port** (default 3000): Accepts transaction submissions from wallet CLI
 - **libp2p port** (default 4000): Handles peer-to-peer gossip protocol
 
-**Peer discovery:**
+**Peer discovery and connection:**
 - Nodes use **libp2p gossipsub** for message propagation
 - **mDNS** discovers peers on local network automatically
+- **When a peer is discovered, the node automatically dials it to establish connection**
 - **Kad-DHT** enables distributed peer discovery
-- Provide `--peer` flag to explicitly connect to bootstrap peers
+- Provide `--peer` flag to specify bootstrap peers
 
 **Connection flow:**
 1. Node A starts on port 3000 (HTTP) and 4000 (libp2p)
 2. Node B starts on port 3001 and connects to `localhost:3000`
 3. Node B calculates Node A's libp2p port: 3000 + 1000 = 4000
-4. Node B's libp2p connects to Node A's libp2p on port 4000
-5. Both nodes subscribe to gossipsub topics: `/grosik/block`, `/grosik/transaction`, etc.
-6. Messages published to topics are automatically propagated to all connected peers
+4. Node B uses mDNS to discover Node A's peer ID
+5. Upon discovery, Node B automatically dials Node A
+6. Both nodes subscribe to gossipsub topics: `/grosik/block`, `/grosik/transaction`, etc.
+7. Messages published to topics are automatically propagated to all connected peers
 
 **Message propagation:**
 - Blocks, transactions, and peer discovery messages are broadcast via gossipsub
 - Built-in deduplication prevents processing the same message twice
 - Encryption and authentication handled by libp2p Noise protocol
+
+**Troubleshooting:**
+- Look for `🔍 Peer discovered:` messages - this means mDNS found the peer
+- Look for `✅ Peer connected:` messages - this confirms successful connection
+- `Connected Peers: N` in the status should show non-zero once peers connect
+- If peers don't connect, ensure both nodes are on the same network and mDNS is not blocked
 
 ## Tips
 - Health check: `curl http://localhost:3000/health`
