@@ -142,7 +142,7 @@ export class GossipProtocol {
       type: 'PEER_DISCOVERY',
       payload: {
         id: this.nodeId,
-        address: 'localhost',
+        address: 'localhost', // In production, this should be the actual network address
         port: this.port
       },
       sender: this.nodeId,
@@ -182,5 +182,12 @@ export class GossipProtocol {
    */
   getNodeId(): string {
     return this.nodeId;
+  }
+
+  /**
+   * Get port
+   */
+  getPort(): number {
+    return this.port;
   }
 }

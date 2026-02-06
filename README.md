@@ -51,6 +51,10 @@ Tiny, opinionated PoS node (TypeScript + Bun) demonstrating DRAND-powered sortit
   
   `PORT=4000 bun run src/index.ts -p 3000`
 
+- Start on different hosts (for multi-machine deployments):
+
+  `PORT=4000 NODE_ADDRESS=192.168.1.100 bun run src/index.ts --peer 192.168.1.101:3000`
+
 ### CLI wallet (run & examples)
 - Send a transaction using the bundled wallet (creates/uses a local keyfile):
 

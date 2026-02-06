@@ -208,18 +208,23 @@ describe('GossipProtocol', () => {
 
     // Intercept broadcast by checking the message handler
     const originalBroadcast = gossip.broadcast.bind(gossip);
-    gossip.broadcast = (message: NetworkMessage) => {
-      if (message.type === 'PEER_DISCOVERY') {
-        discoveryMessage = message;
-      }
-      originalBroadcast(message);
-    };
+    try {
+      gossip.broadcast = (message: NetworkMessage) => {
+        if (message.type === 'PEER_DISCOVERY') {
+          discoveryMessage = message;
+        }
+        originalBroadcast(message);
+      };
 
-    gossip.discoverPeers();
-    
-    expect(discoveryMessage).not.toBeNull();
-    expect(discoveryMessage?.payload).toHaveProperty('id');
-    expect(discoveryMessage?.payload).toHaveProperty('address');
-    expect(discoveryMessage?.payload).toHaveProperty('port');
+      gossip.discoverPeers();
+      
+      expect(discoveryMessage).not.toBeNull();
+      expect(discoveryMessage?.payload).toHaveProperty('id');
+      expect(discoveryMessage?.payload).toHaveProperty('address');
+      expect(discoveryMessage?.payload).toHaveProperty('port');
+    } finally {
+      // Restore original method
+      gossip.broadcast = originalBroadcast;
+    }
   });
 });

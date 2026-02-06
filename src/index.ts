@@ -39,7 +39,8 @@ async function main() {
 
   // Create and start the node
   const port = parseInt(process.env.PORT || '3000');
-  const node = new Node(port);
+  const nodeAddress = process.env.NODE_ADDRESS || 'localhost';
+  const node = new Node(port, nodeAddress);
 
   // Start the node
   await node.start();

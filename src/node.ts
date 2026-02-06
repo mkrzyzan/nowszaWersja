@@ -20,8 +20,9 @@ export class Node {
   private isRunning: boolean = false;
   private blockInterval: number = 5 * 60 * 1000; // 5 minutes in milliseconds
   private blockTimer?: Timer;
+  private nodeAddress: string = 'localhost'; // Network address where this node is reachable
 
-  constructor(port: number = 3000) {
+  constructor(port: number = 3000, nodeAddress?: string) {
     this.nodeId = CryptoUtils.generateNodeId();
     this.keyPair = CryptoUtils.generateKeyPair();
     this.address = CryptoUtils.getAddressFromPublicKey(this.keyPair.publicKey);
@@ -29,6 +30,9 @@ export class Node {
     this.pos = new ProofOfStake();
     this.drand = new DrandClient();
     this.gossip = new GossipProtocol(this.nodeId, port);
+    if (nodeAddress) {
+      this.nodeAddress = nodeAddress;
+    }
 
     // Initialize with some stake for this node
     this.pos.addStake(this.address, 1000);
@@ -69,6 +73,22 @@ export class Node {
           port,
           lastSeen: Date.now()
         });
+        
+        // Send our own PEER_DISCOVERY back to the new peer
+        // This ensures bidirectional peer discovery
+        const responseMessage: NetworkMessage = {
+          type: 'PEER_DISCOVERY',
+          payload: {
+            id: this.nodeId,
+            address: this.nodeAddress,
+            port: this.gossip.getPort()
+          },
+          sender: this.nodeId,
+          timestamp: Date.now()
+        };
+        
+        // Send directly to the new peer via HTTP
+        this.sendDiscoveryToPeer(address || 'localhost', port, responseMessage);
       }
     });
   }
@@ -89,6 +109,23 @@ export class Node {
     } else if (block.index > latestBlock.index + 1) {
       // We're behind, might need to request the chain
       console.log('Received block indicates we are behind. Chain sync needed.');
+    }
+  }
+
+  /**
+   * Send PEER_DISCOVERY message to a specific peer
+   */
+  private async sendDiscoveryToPeer(host: string, port: number, message: NetworkMessage): Promise<void> {
+    try {
+      const url = `http://${host}:${port}/gossip`;
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(message)
+      });
+    } catch (error) {
+      // Silently fail - peer might be unreachable
+      console.debug(`Could not send discovery to ${host}:${port}`);
     }
   }
 
@@ -116,8 +153,8 @@ export class Node {
         type: 'PEER_DISCOVERY',
         payload: {
           id: this.nodeId,
-          address: 'localhost',
-          port: this.gossip['port']
+          address: this.nodeAddress,
+          port: this.gossip.getPort()
         },
         sender: this.nodeId,
         timestamp: Date.now()
@@ -133,13 +170,8 @@ export class Node {
 
       if (response.ok) {
         console.log(`✅ Successfully connected to bootstrap peer at ${host}:${port}`);
-        // Also add the bootstrap peer to our peers list
-        this.gossip.addPeer({
-          id: `bootstrap-${host}-${port}`,
-          address: host,
-          port: port,
-          lastSeen: Date.now()
-        });
+        // The PEER_DISCOVERY handler on the bootstrap peer will add us to their peer list
+        // We don't add the bootstrap peer here because we'll receive their PEER_DISCOVERY response
       } else {
         console.error(`Failed to connect to bootstrap peer: ${response.statusText}`);
       }
