@@ -74,8 +74,8 @@ export class Node {
           lastSeen: Date.now()
         });
         
-        // Send our own PEER_DISCOVERY back to the new peer
-        // This ensures bidirectional peer discovery
+        // Broadcast our own PEER_DISCOVERY so all peers learn about us
+        // This enables transitive peer discovery (A->B, C->B, then A<->C)
         const responseMessage: NetworkMessage = {
           type: 'PEER_DISCOVERY',
           payload: {
@@ -87,8 +87,8 @@ export class Node {
           timestamp: Date.now()
         };
         
-        // Send directly to the new peer via HTTP
-        this.sendDiscoveryToPeer(address || 'localhost', port, responseMessage);
+        // Broadcast to all peers (including the sender who will see we're already known)
+        this.gossip.broadcast(responseMessage);
       }
     });
   }
@@ -109,24 +109,6 @@ export class Node {
     } else if (block.index > latestBlock.index + 1) {
       // We're behind, might need to request the chain
       console.log('Received block indicates we are behind. Chain sync needed.');
-    }
-  }
-
-  /**
-   * Send PEER_DISCOVERY message to a specific peer
-   */
-  private async sendDiscoveryToPeer(host: string, port: number, message: NetworkMessage): Promise<void> {
-    try {
-      const url = `http://${host}:${port}/gossip`;
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(message)
-      });
-      console.log(`Sent PEER_DISCOVERY response to ${host}:${port}`);
-    } catch (error) {
-      // Peer might not be ready yet or unreachable
-      console.log(`Could not send discovery to ${host}:${port}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
