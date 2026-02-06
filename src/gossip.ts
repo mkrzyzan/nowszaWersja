@@ -84,10 +84,11 @@ export class GossipProtocol {
           directConnect: true
         }),
         identify: identify(),
-        dht: kadDHT({
-          // Enable automatic dialing for DHT queries
-          clientMode: false
-        }),
+        // DHT temporarily disabled for debugging
+        // dht: kadDHT({
+        //   // Enable automatic dialing for DHT queries
+        //   clientMode: false
+        // }),
         ping: ping()
       }
     });
@@ -126,7 +127,7 @@ export class GossipProtocol {
     });
 
     // Listen for peer discovery events
-    // Store peer info and let gossipsub/DHT establish connections
+    // Store peer info - libp2p services (gossipsub) will handle connections automatically
     this.libp2p.addEventListener('peer:discovery', async (evt) => {
       const peerId = evt.detail.id;
       const discoveredMultiaddrs = evt.detail.multiaddrs;
@@ -148,27 +149,7 @@ export class GossipProtocol {
           multiaddrs: completeMultiaddrs
         });
         console.log(`   ✅ Stored in peer store`);
-        
-        // Try to dial using just the peer ID (libp2p will look up addresses from peer store)
-        setTimeout(async () => {
-          try {
-            // Check if already connected
-            const connections = this.libp2p?.getConnections(peerId);
-            if (connections && connections.length > 0) {
-              console.log(`   ✅ Already connected to ${peerId.toString().substring(0, 20)}...`);
-              return;
-            }
-            
-            console.log(`   🔗 Attempting to connect...`);
-            // Dial using peer ID - libp2p will use addresses from peer store
-            const connection = await this.libp2p?.dial(peerId);
-            console.log(`   ✅ Successfully connected!`);
-            console.log(`   Connection ID: ${connection?.id}`);
-          } catch (dialError: any) {
-            console.log(`   ⚠️  Dial error details:`, dialError);
-            // Connection might be established later by gossipsub or DHT
-          }
-        }, 2000); // Wait 2 seconds before dialing
+        console.log(`   Gossipsub will establish connection automatically when needed`);
       } catch (err) {
         console.log(`   ⚠️  Failed to store: ${err}`);
       }
