@@ -22,14 +22,14 @@ export class Node {
   private blockTimer?: Timer;
   private nodeAddress: string = 'localhost'; // Network address where this node is reachable
 
-  constructor(port: number = 3000, nodeAddress?: string) {
+  constructor(httpPort: number = 3000, libp2pPort: number = 4000, nodeAddress?: string) {
     this.nodeId = CryptoUtils.generateNodeId();
     this.keyPair = CryptoUtils.generateKeyPair();
     this.address = CryptoUtils.getAddressFromPublicKey(this.keyPair.publicKey);
     this.blockchain = new Blockchain();
     this.pos = new ProofOfStake();
     this.drand = new DrandClient();
-    this.gossip = new GossipProtocol(this.nodeId, port);
+    this.gossip = new GossipProtocol(this.nodeId, libp2pPort);
     if (nodeAddress) {
       this.nodeAddress = nodeAddress;
     }
@@ -67,7 +67,8 @@ export class Node {
       const { id, address, port } = message.payload;
       // Only add peer if it's not ourselves
       if (id !== this.nodeId) {
-        this.gossip.addPeer({
+        // Make addPeer async-friendly by using void promise
+        void this.gossip.addPeer({
           id,
           address: address || 'localhost',
           port,
@@ -113,7 +114,7 @@ export class Node {
   }
 
   /**
-   * Connect to a bootstrap peer
+   * Connect to a bootstrap peer using libp2p
    */
   async connectToBootstrapPeer(peerAddress: string): Promise<void> {
     try {
@@ -139,33 +140,15 @@ export class Node {
         }
       }
 
-      // Create PEER_DISCOVERY message
-      const message: NetworkMessage = {
-        type: 'PEER_DISCOVERY',
-        payload: {
-          id: this.nodeId,
-          address: this.nodeAddress,
-          port: this.gossip.getPort()
-        },
-        sender: this.nodeId,
-        timestamp: Date.now()
-      };
-
-      // Send to bootstrap peer
-      const url = `http://${host}:${port}/gossip`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(message)
+      // Add peer using libp2p (it will dial automatically)
+      await this.gossip.addPeer({
+        id: `bootstrap-${host}:${port}`,
+        address: host,
+        port: port,
+        lastSeen: Date.now()
       });
 
-      if (response.ok) {
-        console.log(`✅ Successfully connected to bootstrap peer at ${host}:${port}`);
-        // The PEER_DISCOVERY handler on the bootstrap peer will add us to their peer list
-        // We don't add the bootstrap peer here because we'll receive their PEER_DISCOVERY response
-      } else {
-        console.error(`Failed to connect to bootstrap peer: ${response.statusText}`);
-      }
+      console.log(`✅ Successfully connected to bootstrap peer at ${host}:${port}`);
     } catch (error) {
       console.error(`Error connecting to bootstrap peer:`, error);
     }
@@ -184,6 +167,15 @@ export class Node {
     console.log('='.repeat(60));
 
     this.isRunning = true;
+
+    // Start libp2p gossip protocol
+    try {
+      await this.gossip.start();
+      console.log('libp2p gossip protocol started');
+    } catch (error) {
+      console.error('Failed to start gossip protocol:', error);
+      throw error;
+    }
 
     // Get DRAND chain info
     try {
@@ -204,11 +196,12 @@ export class Node {
   /**
    * Stop the node
    */
-  stop(): void {
+  async stop(): Promise<void> {
     this.isRunning = false;
     if (this.blockTimer) {
       clearInterval(this.blockTimer);
     }
+    await this.gossip.stop();
     console.log('Node stopped');
   }
 
@@ -329,13 +322,6 @@ export class Node {
       // rethrow so the HTTP server can return an error
       throw error;
     }
-  }
-
-  /**
-   * Receive a gossip network message (from HTTP/WebSocket)
-   */
-  receiveGossipMessage(message: NetworkMessage): void {
-    this.gossip.handleMessage(message);
   }
 
   /**

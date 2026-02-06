@@ -1,16 +1,34 @@
 /**
- * Simple gossip protocol for GROSIK
- * Enables peer-to-peer communication between nodes
+ * libp2p-based gossip protocol for GROSIK
+ * Enables peer-to-peer communication between nodes using libp2p gossipsub
  */
 
+import { createLibp2p, type Libp2p } from 'libp2p';
+import { tcp } from '@libp2p/tcp';
+import { mplex } from '@libp2p/mplex';
+import { yamux } from '@libp2p/yamux';
+import { noise } from '@libp2p/noise';
+import { gossipsub } from '@libp2p/gossipsub';
+import { identify } from '@libp2p/identify';
+import { kadDHT } from '@libp2p/kad-dht';
+import type { Message } from '@libp2p/interface';
+import { multiaddr } from '@multiformats/multiaddr';
 import type { Peer, NetworkMessage, Block } from './types';
 
 export class GossipProtocol {
+  private libp2p?: Libp2p;
   private peers: Map<string, Peer> = new Map();
   private nodeId: string;
   private port: number;
   private messageHandlers: Map<string, (message: NetworkMessage) => void> = new Map();
   private seenMessages: Set<string> = new Set();
+  private started: boolean = false;
+  private topics: string[] = [
+    '/grosik/block',
+    '/grosik/transaction',
+    '/grosik/peer-discovery',
+    '/grosik/stake-update'
+  ];
 
   constructor(nodeId: string, port: number) {
     this.nodeId = nodeId;
@@ -18,11 +36,98 @@ export class GossipProtocol {
   }
 
   /**
-   * Add a peer to the network
+   * Start the libp2p node
    */
-  addPeer(peer: Peer): void {
+  async start(): Promise<void> {
+    if (this.started) {
+      return;
+    }
+
+    // Create libp2p node
+    this.libp2p = await createLibp2p({
+      addresses: {
+        listen: [`/ip4/0.0.0.0/tcp/${this.port}`]
+      },
+      transports: [tcp()],
+      streamMuxers: [mplex(), yamux()],
+      connectionEncryption: [noise()],
+      services: {
+        pubsub: gossipsub({
+          emitSelf: false,
+          allowPublishToZeroTopicPeers: true
+        }),
+        identify: identify(),
+        dht: kadDHT()
+      }
+    });
+
+    await this.libp2p.start();
+    this.started = true;
+
+    // Subscribe to all topics
+    for (const topic of this.topics) {
+      this.libp2p.services.pubsub.subscribe(topic);
+    }
+
+    // Handle incoming messages
+    this.libp2p.services.pubsub.addEventListener('message', (evt: CustomEvent<Message>) => {
+      this.handlePubsubMessage(evt.detail);
+    });
+
+    // Track peer connections
+    this.libp2p.addEventListener('peer:connect', (evt) => {
+      const peerId = evt.detail.toString();
+      console.log(`Peer connected: ${peerId}`);
+    });
+
+    this.libp2p.addEventListener('peer:disconnect', (evt) => {
+      const peerId = evt.detail.toString();
+      console.log(`Peer disconnected: ${peerId}`);
+    });
+
+    console.log(`libp2p node started with PeerId: ${this.libp2p.peerId.toString()}`);
+  }
+
+  /**
+   * Stop the libp2p node
+   */
+  async stop(): Promise<void> {
+    if (this.libp2p) {
+      await this.libp2p.stop();
+      this.started = false;
+      console.log('libp2p node stopped');
+    }
+  }
+
+  /**
+   * Handle incoming pubsub messages
+   */
+  private handlePubsubMessage(message: Message): void {
+    try {
+      const data = new TextDecoder().decode(message.data);
+      const networkMessage: NetworkMessage = JSON.parse(data);
+      this.handleMessage(networkMessage);
+    } catch (error) {
+      console.error('Error handling pubsub message:', error);
+    }
+  }
+
+  /**
+   * Add a peer to the network (for compatibility - libp2p handles peer management)
+   */
+  async addPeer(peer: Peer): Promise<void> {
     this.peers.set(peer.id, peer);
     console.log(`Added peer: ${peer.id} at ${peer.address}:${peer.port}`);
+
+    // Try to dial the peer using libp2p
+    if (this.libp2p && this.started) {
+      try {
+        const addr = multiaddr(`/ip4/${peer.address}/tcp/${peer.port}`);
+        await this.libp2p.dial(addr);
+      } catch (error) {
+        console.log(`Could not dial peer ${peer.id}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
   }
 
   /**
@@ -55,24 +160,7 @@ export class GossipProtocol {
   }
 
   /**
-   * Send a message to a peer over HTTP
-   */
-  private async sendToPeer(peer: Peer, message: NetworkMessage): Promise<void> {
-    try {
-      const url = `http://${peer.address}:${peer.port}/gossip`;
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(message)
-      });
-    } catch (error) {
-      // Peer might be unreachable, log but don't crash
-      console.log(`Failed to send ${message.type} to peer ${peer.id.substring(0, 16)}...: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  /**
-   * Broadcast a message to all peers
+   * Broadcast a message to all peers using libp2p pubsub
    */
   broadcast(message: NetworkMessage): void {
     const messageId = this.getMessageId(message);
@@ -90,12 +178,32 @@ export class GossipProtocol {
       messagesToDelete.forEach(id => this.seenMessages.delete(id));
     }
 
-    console.log(`Broadcasting ${message.type} message to ${this.peers.size} peers`);
+    // Get the topic for this message type
+    const topic = this.getTopicForMessageType(message.type);
     
-    // Actually send the message over HTTP to each peer
-    this.peers.forEach(peer => {
-      this.sendToPeer(peer, message);
-    });
+    // Publish via libp2p pubsub
+    if (this.libp2p && this.started) {
+      try {
+        const data = new TextEncoder().encode(JSON.stringify(message));
+        this.libp2p.services.pubsub.publish(topic, data);
+        console.log(`Broadcasting ${message.type} message via libp2p gossipsub`);
+      } catch (error) {
+        console.error(`Failed to broadcast message: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  }
+
+  /**
+   * Get the topic name for a message type
+   */
+  private getTopicForMessageType(type: string): string {
+    const topicMap: Record<string, string> = {
+      'BLOCK': '/grosik/block',
+      'TRANSACTION': '/grosik/transaction',
+      'PEER_DISCOVERY': '/grosik/peer-discovery',
+      'STAKE_UPDATE': '/grosik/stake-update'
+    };
+    return topicMap[type] || '/grosik/default';
   }
 
   /**

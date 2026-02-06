@@ -1,9 +1,9 @@
 /**
- * Bun-based HTTP/WebSocket server to accept client transactions and gossip messages
+ * Bun-based HTTP server to accept client transactions
  */
 
 import { Node } from './node';
-import type { Transaction, NetworkMessage } from './types';
+import type { Transaction } from './types';
 
 export function startServer(node: Node, serverPort?: number) {
   const port = serverPort || parseInt(process.env.PORT || '3000');
@@ -30,21 +30,11 @@ export function startServer(node: Node, serverPort?: number) {
         }
       }
 
-      if (req.method === 'POST' && url.pathname === '/gossip') {
-        try {
-          const msg = await req.json();
-          node.receiveGossipMessage(msg as NetworkMessage);
-          return new Response(JSON.stringify({ status: 'ok' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        } catch (err: any) {
-          return new Response(String(err?.message || err), { status: 400 });
-        }
-      }
-
       return new Response('Not found', { status: 404 });
     }
   });
 
-  console.log(`Bun server listening on http://${host}:${port} (accessible at http://localhost:${port})`);
+  console.log(`HTTP server listening on http://${host}:${port} (accessible at http://localhost:${port})`);
   
   return server;
 }
