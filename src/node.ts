@@ -115,6 +115,7 @@ export class Node {
 
   /**
    * Connect to a bootstrap peer using libp2p
+   * Note: The peer address should be the HTTP port, and this method will calculate the libp2p port
    */
   async connectToBootstrapPeer(peerAddress: string): Promise<void> {
     try {
@@ -122,33 +123,39 @@ export class Node {
       
       // Parse peer address (format: host:port or just port)
       let host = 'localhost';
-      let port = 3000;
+      let httpPort = 3000;
       
       if (peerAddress.includes(':')) {
         const parts = peerAddress.split(':');
         host = parts[0];
-        port = parseInt(parts[1]);
+        httpPort = parseInt(parts[1]);
         
-        if (isNaN(port)) {
+        if (isNaN(httpPort)) {
           throw new Error(`Invalid port in peer address: ${peerAddress}. Expected format: host:port (e.g., localhost:3000)`);
         }
       } else {
-        port = parseInt(peerAddress);
+        httpPort = parseInt(peerAddress);
         
-        if (isNaN(port)) {
+        if (isNaN(httpPort)) {
           throw new Error(`Invalid port: ${peerAddress}. Expected a number (e.g., 3000) or host:port format (e.g., localhost:3000)`);
         }
       }
 
-      // Add peer using libp2p (it will dial automatically)
+      // Calculate libp2p port (httpPort + 1000 by convention)
+      const libp2pPort = httpPort + 1000;
+
+      // Connect to peer using libp2p
+      await this.gossip.addBootstrapPeer(host, libp2pPort);
+
+      // Also track in our peer list for compatibility
       await this.gossip.addPeer({
-        id: `bootstrap-${host}:${port}`,
+        id: `bootstrap-${host}:${httpPort}`,
         address: host,
-        port: port,
+        port: libp2pPort,
         lastSeen: Date.now()
       });
 
-      console.log(`✅ Successfully connected to bootstrap peer at ${host}:${port}`);
+      console.log(`✅ Successfully connected to bootstrap peer at ${host}:${httpPort} (libp2p: ${libp2pPort})`);
     } catch (error) {
       console.error(`Error connecting to bootstrap peer:`, error);
     }

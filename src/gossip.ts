@@ -12,6 +12,7 @@ import { gossipsub } from '@libp2p/gossipsub';
 import { identify } from '@libp2p/identify';
 import { kadDHT } from '@libp2p/kad-dht';
 import { ping } from '@libp2p/ping';
+import { mdns } from '@libp2p/mdns';
 import type { Message } from '@libp2p/interface';
 import { multiaddr } from '@multiformats/multiaddr';
 import type { Peer, NetworkMessage, Block } from './types';
@@ -52,6 +53,11 @@ export class GossipProtocol {
       transports: [tcp()],
       streamMuxers: [mplex(), yamux()],
       connectionEncryption: [noise()],
+      peerDiscovery: [
+        mdns({
+          interval: 1000  // Check for peers every second
+        })
+      ],
       services: {
         pubsub: gossipsub({
           emitSelf: false,
@@ -115,22 +121,35 @@ export class GossipProtocol {
   }
 
   /**
-   * Add a peer to the network (for compatibility - libp2p handles peer management)
+   * Add a peer to the network (for compatibility - libp2p handles peer management automatically)
+   * Note: With libp2p, peers discover each other through gossipsub topics and DHT
    */
   async addPeer(peer: Peer): Promise<void> {
     this.peers.set(peer.id, peer);
     console.log(`Added peer: ${peer.id} at ${peer.address}:${peer.port}`);
+    
+    // libp2p will discover peers automatically through gossipsub and DHT
+    // We don't need to manually dial - just subscribing to the same topics is enough
+  }
 
-    // Try to dial the peer using libp2p
-    if (this.libp2p && this.started) {
-      try {
-        // Convert localhost to 127.0.0.1 for libp2p
-        const address = peer.address === 'localhost' ? '127.0.0.1' : peer.address;
-        const addr = multiaddr(`/ip4/${address}/tcp/${peer.port}`);
-        await this.libp2p.dial(addr);
-      } catch (error) {
-        console.log(`Could not dial peer ${peer.id}: ${error instanceof Error ? error.message : String(error)}`);
-      }
+  /**
+   * Add a bootstrap peer and dial it
+   */
+  async addBootstrapPeer(address: string, port: number): Promise<void> {
+    if (!this.libp2p || !this.started) {
+      throw new Error('libp2p not started');
+    }
+    
+    try {
+      // Convert localhost to 127.0.0.1
+      const addr = address === 'localhost' ? '127.0.0.1' : address;
+      const multiaddr_str = `/ip4/${addr}/tcp/${port}`;
+      console.log(`Dialing bootstrap peer at ${multiaddr_str}`);
+      const ma = multiaddr(multiaddr_str);
+      await this.libp2p.dial(ma);
+      console.log(`Successfully connected to peer at ${multiaddr_str}`);
+    } catch (error) {
+      console.log(`Could not dial bootstrap peer: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -143,16 +162,29 @@ export class GossipProtocol {
   }
 
   /**
-   * Get all peers
+   * Get all peers from libp2p connections
    */
   getPeers(): Peer[] {
+    if (this.libp2p && this.started) {
+      // Get peers from libp2p connections
+      const libp2pPeers = this.libp2p.getPeers();
+      return libp2pPeers.map(peerId => ({
+        id: peerId.toString(),
+        address: 'unknown',
+        port: 0,
+        lastSeen: Date.now()
+      }));
+    }
     return Array.from(this.peers.values());
   }
 
   /**
-   * Get peer count
+   * Get peer count from libp2p connections
    */
   getPeerCount(): number {
+    if (this.libp2p && this.started) {
+      return this.libp2p.getPeers().length;
+    }
     return this.peers.size;
   }
 
