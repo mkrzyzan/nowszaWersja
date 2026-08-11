@@ -10,6 +10,17 @@ This scheme enables outgoing payments from an account using **only hash preimage
 
 ---
 
+## Wallet Secrets (never on-chain)
+
+| Secret | Description                                                       |
+|--------|-------------------------------------------------------------------|
+| `S` | Master seed, kept secret forever                                  |
+| `R_k` | Per-step spend secret: `R_k = Hash("R" \|\| S \|\| k)` (or a KDF) |
+| `R_current` | The secret whose hash equals `acct.P` right now (`k`)             |
+| `R_next` | The secret for (`k+1`)                                            |
+
+---
+
 ## Account State
 
 Each account has a stable, static identifier `A` (Bob's public "address") and the following mutable state:
@@ -21,16 +32,6 @@ AccountState {
   P        : bytes32  // current auth hash = Hash(R_current)
 }
 ```
-
-### Wallet Secrets (never on-chain)
-
-| Secret | Description |
-|--------|-------------|
-| `S` | Master seed, kept secret forever |
-| `R_k` | Per-step spend secret: `R_k = Hash("R" \|\| S \|\| k)` (or a KDF) |
-| `R_current` | The secret whose hash equals `acct.P` right now |
-
----
 
 ## Receiving Funds (offline-compatible)
 
@@ -66,14 +67,14 @@ CommitTx {
 **Commitment hash construction:**
 
 ```
-pay_hash = Hash(Encode(PaymentBody))
+pay_hash = Hash(PaymentBody)
 
 C = Hash(
   "SIGLESS_COMMIT_V1" ||
   chain_id            ||
   A                   ||
-  pay_hash            ||
-  P_next              ||   // rotation target committed here
+  pay_hash            ||   // Hash(PaymentBody)
+  P_next              ||   // Hash(R_next): rotation target committed here
   N                   ||   // random nonce chosen by Bob
   t_expire
 )
@@ -96,7 +97,7 @@ RevealTx {
   P_next       : bytes32       // new auth hash after rotation
   N            : bytes32       // nonce used in CommitTx
   t_expire     : uint64
-  R_current    : bytes32       // preimage reveal — authorises the spend
+  R_current    : bytes32       // preimage reveal — authorises the spend only if Hash(R_current) = AccountState.P
 }
 ```
 
